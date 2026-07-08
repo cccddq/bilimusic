@@ -1,0 +1,23 @@
+<svg viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgF" x1="0" y1="0" x2="256" y2="256">
+      <stop offset="0%" stop-color="#FB7299"/>
+      <stop offset="100%" stop-color="#FF8DB5"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="256" height="256" rx="48" fill="url(#bgF)"/>
+  <!-- TV body -->
+  <rect x="40" y="72" width="176" height="112" rx="20" stroke="#fff" stroke-width="8" fill="rgba(0,0,0,0.1)"/>
+  <!-- TV screen highlight -->
+  <rect x="48" y="80" width="160" height="96" rx="12" fill="rgba(255,255,255,0.04)"/>
+  <!-- Play button on screen -->
+  <path d="M108 104v48l36-24-36-24z" fill="#fff"/>
+  <!-- TV stand -->
+  <rect x="96" y="184" width="64" height="10" rx="5" fill="#fff" opacity="0.5"/>
+  <!-- Antennas -->
+  <rect x="40" y="52" width="10" height="28" rx="4" fill="#fff" opacity="0.3" transform="rotate(-20 45 66)"/>
+  <rect x="206" y="52" width="10" height="28" rx="4" fill="#fff" opacity="0.3" transform="rotate(20 211 66)"/>
+  <!-- Antenna tips -->
+  <circle cx="42" cy="48" r="5" fill="#fff" opacity="0.3"/>
+  <circle cx="214" cy="48" r="5" fill="#fff" opacity="0.3"/>
+</svg>

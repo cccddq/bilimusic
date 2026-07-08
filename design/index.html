@@ -1,0 +1,1776 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BiliMusic 视觉重设计 · 设计系统</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ===================================================================
+   BiliMusic Redesign — Design System Showcase
+   Theme: "Aurora" — 深空霓虹 · 冰粉邂逅
+   =================================================================== */
+
+/* ----- Reset & Base ----- */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Inter','Noto Sans SC',system-ui,-apple-system,sans-serif;
+  background:#07070f;
+  color:#e8e8f0;
+  overflow-x:hidden;
+  min-height:100vh;
+}
+
+/* ----- Design Tokens ----- */
+:root{
+  /* Brand */
+  --pink:#FB7299;
+  --pink-light:#FF8DB5;
+  --pink-glow:rgba(251,114,153,.35);
+  --blue:#00D4FF;
+  --blue-glow:rgba(0,212,255,.25);
+  --purple:#7C5CFC;
+  --purple-glow:rgba(124,92,252,.25);
+
+  /* Surfaces */
+  --bg-deep:#07070f;
+  --bg:#0a0a18;
+  --surface:#0f0f23;
+  --surface-elevated:#161630;
+  --card:rgba(255,255,255,.04);
+  --card-hover:rgba(255,255,255,.07);
+  --border:rgba(255,255,255,.08);
+  --border-light:rgba(255,255,255,.12);
+
+  /* Text */
+  --text:#eeeef8;
+  --text-secondary:#8888a8;
+  --text-tertiary:#5a5a78;
+
+  /* Functional */
+  --radius-sm:8px;
+  --radius:12px;
+  --radius-lg:16px;
+  --radius-xl:24px;
+
+  /* Effects */
+  --shadow-card:0 2px 20px rgba(0,0,0,.4);
+  --shadow-elevated:0 8px 40px rgba(0,0,0,.5);
+  --glass:rgba(15,15,35,.75);
+  --glass-border:rgba(255,255,255,.06);
+
+  /* Animation */
+  --ease-spring:cubic-bezier(.34,1.56,.64,1);
+  --ease-out:cubic-bezier(0,0,.2,1);
+  --duration-fast:150ms;
+  --duration:300ms;
+  --duration-slow:500ms;
+}
+
+/* ===================================================================
+   SECTION: Navigation
+   =================================================================== */
+.nav{
+  position:fixed;top:0;left:0;right:0;z-index:1000;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 32px;height:60px;
+  background:rgba(7,7,15,.8);
+  backdrop-filter:blur(20px) saturate(1.5);
+  border-bottom:1px solid var(--border);
+}
+.nav-logo{
+  display:flex;align-items:center;gap:12px;
+  font-size:18px;font-weight:700;
+  background:linear-gradient(135deg,var(--pink),var(--purple));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.nav-logo svg{width:28px;height:28px}
+.nav-links{display:flex;gap:4px}
+.nav-links a{
+  padding:8px 18px;border-radius:20px;font-size:13px;font-weight:500;
+  color:var(--text-secondary);text-decoration:none;
+  transition:all var(--duration) var(--ease-out);
+}
+.nav-links a:hover,.nav-links a.active{
+  color:var(--text);background:var(--card);
+}
+.nav-links a.active{color:var(--pink)}
+.nav-badge{
+  background:var(--pink);color:#fff;font-size:10px;
+  padding:2px 8px;border-radius:10px;margin-left:4px;
+  -webkit-text-fill-color:#fff;
+}
+
+/* ===================================================================
+   SECTION HERO
+   =================================================================== */
+.hero{
+  min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:120px 32px 80px;
+  position:relative;overflow:hidden;
+}
+.hero-bg{
+  position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse 600px 400px at 20% 50%, rgba(251,114,153,.08) 0%, transparent 70%),
+    radial-gradient(ellipse 500px 500px at 80% 60%, rgba(0,212,255,.06) 0%, transparent 70%),
+    radial-gradient(ellipse 300px 300px at 50% 30%, rgba(124,92,252,.05) 0%, transparent 70%);
+  pointer-events:none;
+}
+.hero-bg::after{
+  content:'';position:absolute;inset:0;
+  background:url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.4'/%3E%3C/svg%3E");
+  opacity:.06;pointer-events:none;
+}
+.hero-label{
+  display:inline-flex;align-items:center;gap:6px;
+  background:var(--card);border:1px solid var(--border);
+  padding:6px 16px;border-radius:20px;
+  font-size:12px;color:var(--text-secondary);
+  margin-bottom:32px;position:relative;
+}
+.hero-label-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--pink);animation:pulse 2s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.hero h1{
+  font-family:'Space Grotesk','Noto Sans SC',sans-serif;
+  font-size:clamp(40px,8vw,80px);font-weight:800;line-height:1.1;
+  margin-bottom:16px;position:relative;
+  background:linear-gradient(135deg, #fff 30%, var(--pink-light) 60%, var(--blue) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.hero p{
+  font-size:clamp(16px,2.5vw,20px);color:var(--text-secondary);
+  max-width:600px;line-height:1.6;margin-bottom:40px;
+  position:relative;
+}
+.hero-actions{display:flex;gap:12px;position:relative}
+.btn-primary{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:12px 28px;border-radius:30px;
+  background:linear-gradient(135deg,var(--pink),var(--purple));
+  color:#fff;border:none;font-size:14px;font-weight:600;
+  cursor:pointer;text-decoration:none;
+  transition:all var(--duration) var(--ease-spring);
+  box-shadow:0 4px 20px var(--pink-glow);
+}
+.btn-primary:hover{transform:translateY(-2px) scale(1.02);box-shadow:0 8px 32px var(--pink-glow);}
+.btn-secondary{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:12px 28px;border-radius:30px;
+  background:var(--card);color:var(--text);
+  border:1px solid var(--border);font-size:14px;font-weight:500;
+  cursor:pointer;text-decoration:none;
+  transition:all var(--duration) var(--ease-out);
+}
+.btn-secondary:hover{background:var(--card-hover);border-color:var(--border-light);}
+
+/* ===================================================================
+   SECTION: Icon Design
+   =================================================================== */
+.section{
+  padding:80px 32px;
+  max-width:1200px;margin:0 auto;
+}
+.section-label{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;
+  color:var(--pink);margin-bottom:16px;
+}
+.section-label::before{content:'';width:24px;height:2px;background:var(--pink);border-radius:1px;}
+.section-title{
+  font-size:clamp(28px,4vw,42px);font-weight:700;
+  margin-bottom:16px;line-height:1.2;
+}
+.section-desc{
+  color:var(--text-secondary);font-size:15px;line-height:1.7;
+  max-width:640px;margin-bottom:48px;
+}
+
+/* ----- Icon Grid ----- */
+.icon-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  gap:32px;
+}
+.icon-card{
+  background:var(--surface);border-radius:var(--radius-lg);
+  border:1px solid var(--border);
+  padding:40px 32px 32px;
+  text-align:center;
+  transition:all var(--duration) var(--ease-out);
+  cursor:default;
+  position:relative;
+  overflow:hidden;
+}
+.icon-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--card-accent,var(--pink)),transparent);
+  opacity:0;transition:opacity var(--duration);
+}
+.icon-card:hover::before{opacity:1}
+.icon-card:hover{
+  border-color:var(--border-light);
+  transform:translateY(-4px);
+  box-shadow:var(--shadow-elevated);
+}
+.icon-card .icon-number{
+  position:absolute;top:16px;left:20px;
+  font-size:11px;font-weight:600;color:var(--text-tertiary);
+  font-family:'Space Grotesk',monospace;
+}
+.icon-preview{
+  width:128px;height:128px;margin:0 auto 24px;
+  border-radius:24px;
+  display:flex;align-items:center;justify-content:center;
+  position:relative;
+  transition:transform var(--duration-slow) var(--ease-spring);
+}
+.icon-card:hover .icon-preview{transform:scale(1.05) rotate(-3deg);}
+.icon-card h3{font-size:16px;font-weight:600;margin-bottom:6px;}
+.icon-card .icon-meta{font-size:12px;color:var(--text-secondary);margin-bottom:16px;}
+.icon-card .icon-desc{font-size:13px;color:var(--text-tertiary);line-height:1.6;}
+
+/* ---- Individual Icon Styles ---- */
+/* Icon A: Classic BiliNote */
+.icon-a{
+  background:linear-gradient(135deg,#FB7299,#FF4D6A);
+  box-shadow:0 8px 32px rgba(251,114,153,.3);
+}
+.icon-a svg{width:64px;height:64px}
+
+/* Icon B: Neon Vinyl */
+.icon-b{
+  background:linear-gradient(135deg,#0D0D1A,#1A1A35);
+  border:2px solid rgba(255,255,255,.1);
+  box-shadow:0 0 40px rgba(0,212,255,.15);
+}
+.icon-b .vinyl-ring{
+  width:80px;height:80px;border-radius:50%;
+  border:3px solid var(--blue);
+  position:relative;
+  animation:spin 20s linear infinite;
+}
+.icon-b .vinyl-ring::before{
+  content:'';position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  width:24px;height:24px;border-radius:50%;
+  background:var(--pink);
+  box-shadow:0 0 20px var(--pink-glow);
+}
+.icon-b .vinyl-ring::after{
+  content:'';position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  width:12px;height:12px;border-radius:50%;
+  background:var(--bg-deep);
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Icon C: Play Wave */
+.icon-c{
+  background:linear-gradient(135deg,#7C5CFC,#5B3CD0);
+  box-shadow:0 8px 32px rgba(124,92,252,.3);
+  overflow:hidden;
+}
+.wave-group{display:flex;align-items:center;gap:4px;height:48px;}
+.wave-bar{
+  width:5px;border-radius:3px;
+  background:#fff;
+  animation:waveAnim .8s ease-in-out infinite alternate;
+}
+.wave-bar:nth-child(1){height:24px;animation-delay:0s}
+.wave-bar:nth-child(2){height:40px;animation-delay:.1s}
+.wave-bar:nth-child(3){height:32px;animation-delay:.2s}
+.wave-bar:nth-child(4){height:44px;animation-delay:.3s}
+.wave-bar:nth-child(5){height:28px;animation-delay:.15s}
+.wave-bar:nth-child(6){height:38px;animation-delay:.25s}
+.wave-bar:nth-child(7){height:20px;animation-delay:.35s}
+@keyframes waveAnim{to{height:12px;opacity:.6}}
+
+/* Icon D: Cassette */
+.icon-d{
+  background:linear-gradient(135deg,#1A1A35,#0D0D1A);
+  border:2px solid rgba(251,114,153,.15);
+  box-shadow:0 8px 32px rgba(0,0,0,.5);
+  position:relative;
+}
+.icon-d .cassette-body{position:relative;width:80px;height:56px;}
+.icon-d .cassette-hole{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:40px;height:40px;border-radius:50%;
+  border:3px solid rgba(255,255,255,.15);
+}
+.icon-d .cassette-hole::before{
+  content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:16px;height:16px;border-radius:50%;
+  background:linear-gradient(135deg,var(--pink),var(--purple));
+  box-shadow:0 0 20px var(--pink-glow);
+}
+.icon-d .cassette-label{
+  position:absolute;bottom:-4px;left:50%;transform:translateX(-50%);
+  font-size:6px;font-weight:700;letter-spacing:1px;
+  color:var(--text-secondary);white-space:nowrap;
+}
+.icon-d .reel-dot{
+  position:absolute;width:4px;height:4px;border-radius:50%;
+  background:var(--pink);
+  box-shadow:0 0 8px var(--pink-glow);
+}
+.icon-d .reel-dot:nth-child(2){top:12px;left:8px}
+.icon-d .reel-dot:nth-child(3){top:12px;right:8px}
+
+/* Icon E: Minimal B */
+.icon-e{
+  background:linear-gradient(135deg,#0D0D1A,#161630);
+  border:2px solid rgba(251,114,153,.12);
+  box-shadow:0 0 40px rgba(251,114,153,.08);
+  font-family:'Space Grotesk',sans-serif;
+  font-size:56px;font-weight:800;
+  color:var(--pink);
+  text-shadow:0 0 40px var(--pink-glow);
+}
+
+/* Icon F: Bilibili TV */
+.icon-f{
+  background:linear-gradient(135deg,#FB7299,#FF8DB5);
+  box-shadow:0 8px 32px rgba(251,114,153,.3);
+}
+.icon-f svg{width:64px;height:64px}
+.icon-f .tv-screen{fill:rgba(0,0,0,.2)}
+
+/* Icon G: Pulsing Circle */
+.icon-g{
+  background:linear-gradient(135deg,#0D0D1A,#1A1A35);
+  border:2px solid rgba(0,212,255,.1);
+  box-shadow:0 0 40px rgba(0,212,255,.08);
+}
+.icon-g .pulse-ring{
+  width:72px;height:72px;border-radius:50%;
+  border:2px solid var(--blue);
+  position:relative;
+}
+.icon-g .pulse-ring::before{
+  content:'';position:absolute;inset:-8px;
+  border-radius:50%;
+  border:1.5px solid rgba(0,212,255,.15);
+  animation:pulseRing 2s ease-out infinite;
+}
+.icon-g .pulse-ring::after{
+  content:'▶';position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  font-size:24px;color:var(--blue);
+  text-shadow:0 0 20px var(--blue-glow);
+}
+@keyframes pulseRing{0%{transform:scale(1);opacity:1}100%{transform:scale(1.3);opacity:0}}
+
+/* ===================================================================
+   SECTION: UI Design — App Mockup
+   =================================================================== */
+.mockup-section{
+  background:linear-gradient(180deg,var(--bg-deep) 0%,#0a0a18 100%);
+  padding:100px 32px;
+}
+.mockup-container{
+  max-width:1200px;margin:0 auto;
+}
+.mockup-frame{
+  width:100%;border-radius:var(--radius-xl);
+  overflow:hidden;
+  box-shadow:0 20px 80px rgba(0,0,0,.6),0 0 0 1px var(--border);
+  background:var(--bg-deep);
+  position:relative;
+}
+
+/* ---- Mockup Inner (Simulated App) ---- */
+.app-window{
+  display:flex;flex-direction:column;height:100%;min-height:0;
+  font-family:'Inter','Noto Sans SC',system-ui,sans-serif;
+}
+
+/* Title Bar */
+.app-titlebar{
+  display:flex;align-items:center;
+  height:44px;padding:0 16px;
+  background:rgba(15,15,35,.9);
+  border-bottom:1px solid var(--border);
+  -webkit-app-region:drag;
+  flex-shrink:0;
+}
+.titlebar-dots{display:flex;gap:8px;margin-right:16px}
+.titlebar-dot{
+  width:12px;height:12px;border-radius:50%;
+}
+.titlebar-dot:nth-child(1){background:#FF5F57}
+.titlebar-dot:nth-child(2){background:#FEBC2E}
+.titlebar-dot:nth-child(3){background:#28C840}
+.titlebar-text{
+  font-size:13px;font-weight:500;color:var(--text-secondary);
+  flex:1;text-align:center;margin-right:60px;
+}
+.titlebar-text strong{color:var(--pink);font-weight:600}
+
+/* App Layout */
+.app-body{
+  display:grid;
+  grid-template-columns:280px 1fr 340px;
+  height:calc(100vh - 44px - 80px);
+  overflow:hidden;
+}
+
+/* ---- Left Sidebar ---- */
+.app-sidebar{
+  background:rgba(15,15,35,.5);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+}
+.sidebar-header{
+  padding:16px 16px 12px;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;
+}
+.sidebar-header h3{
+  font-size:13px;font-weight:600;color:var(--text-secondary);
+  display:flex;align-items:center;gap:8px;
+  letter-spacing:.5px;text-transform:uppercase;
+}
+.sidebar-header-actions{display:flex;gap:4px}
+.sidebar-header-actions button{
+  width:28px;height:28px;border-radius:8px;
+  background:transparent;border:none;color:var(--text-tertiary);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  font-size:14px;transition:all var(--duration-fast);
+}
+.sidebar-header-actions button:hover{background:var(--card);color:var(--text);}
+.playlist-selector-wrap{
+  padding:0 12px 8px;flex-shrink:0;
+}
+.playlist-selector{
+  display:flex;align-items:center;gap:8px;
+  background:var(--card);border:1px solid var(--border);
+  border-radius:10px;padding:8px 12px;
+  cursor:pointer;transition:all var(--duration-fast);
+  font-size:13px;color:var(--text);
+}
+.playlist-selector:hover{background:var(--card-hover);border-color:var(--border-light);}
+.playlist-selector .ps-icon{opacity:.5}
+.playlist-selector .ps-name{flex:1;font-weight:500}
+.playlist-selector .ps-arrow{font-size:10px;color:var(--text-tertiary);transition:transform var(--duration-fast);}
+.playlist-selector:hover .ps-arrow{transform:translateY(2px);}
+
+.playlist-scroll{
+  flex:1;overflow-y:auto;padding:4px 8px;
+}
+.playlist-scroll::-webkit-scrollbar{width:3px}
+.playlist-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+/* Playlist Items (New Design) */
+.pl-item{
+  display:grid;
+  grid-template-columns:24px 36px 1fr auto;
+  gap:10px;
+  align-items:center;
+  padding:8px 10px;
+  border-radius:var(--radius-sm);
+  cursor:pointer;
+  transition:all var(--duration-fast) var(--ease-out);
+  margin-bottom:2px;
+  position:relative;
+}
+.pl-item:hover{background:var(--card);}
+.pl-item.active{
+  background:rgba(251,114,153,.1);
+  border:1px solid rgba(251,114,153,.2);
+}
+.pl-item .pl-idx{
+  font-size:11px;color:var(--text-tertiary);
+  text-align:center;font-variant-numeric:tabular-nums;
+}
+.pl-item.active .pl-idx{color:var(--pink);font-weight:600;}
+.pl-item .pl-thumb{
+  width:36px;height:36px;border-radius:8px;
+  object-fit:cover;background:var(--surface-elevated);
+  box-shadow:0 2px 8px rgba(0,0,0,.3);
+}
+.pl-item .pl-info{min-width:0}
+.pl-item .pl-title{
+  font-size:13px;font-weight:500;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.pl-item .pl-meta{
+  font-size:11px;color:var(--text-tertiary);
+  margin-top:1px;
+}
+.pl-item .pl-dur{
+  font-size:11px;color:var(--text-tertiary);
+  font-variant-numeric:tabular-nums;
+}
+.pl-item .pl-del{
+  opacity:0;background:transparent;border:none;
+  color:var(--text-tertiary);cursor:pointer;
+  font-size:14px;padding:4px;border-radius:4px;
+  transition:all var(--duration-fast);
+}
+.pl-item:hover .pl-del{opacity:1}
+.pl-item .pl-del:hover{background:rgba(244,67,54,.15);color:#f44336;}
+
+/* Sub-items */
+.pl-subitem{
+  display:grid;
+  grid-template-columns:24px 1fr auto;
+  gap:10px;align-items:center;
+  padding:6px 10px 6px 44px;
+  border-radius:var(--radius-sm);
+  cursor:pointer;transition:all var(--duration-fast);
+  margin-bottom:1px;
+}
+.pl-subitem:hover{background:var(--card);}
+.pl-subitem .pl-sidx{font-size:10px;color:var(--text-tertiary);text-align:center;}
+.pl-subitem .pl-title{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.pl-subitem .pl-meta{font-size:10px;color:var(--text-tertiary);}
+
+/* Empty state */
+.empty-pl{
+  display:flex;flex-direction:column;align-items:center;
+  justify-content:center;padding:48px 20px;color:var(--text-tertiary);
+  text-align:center;gap:12px;
+}
+.empty-pl .empty-icon{
+  width:56px;height:56px;border-radius:16px;
+  background:var(--card);display:flex;align-items:center;justify-content:center;
+  font-size:24px;
+}
+.empty-pl p{font-size:13px;line-height:1.6;}
+
+/* ---- Center: Player Column ---- */
+.app-player{
+  background:#000;
+  display:flex;flex-direction:column;
+  position:relative;
+}
+.player-placeholder{
+  flex:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:16px;color:var(--text-tertiary);
+}
+.player-placeholder .big-icon{
+  width:96px;height:96px;border-radius:24px;
+  background:linear-gradient(135deg,var(--card),var(--surface));
+  display:flex;align-items:center;justify-content:center;
+  font-size:40px;
+  box-shadow:0 0 40px rgba(0,0,0,.3);
+}
+.player-placeholder p{font-size:14px;max-width:280px;text-align:center;line-height:1.6;}
+
+/* ---- Right: Search Column ---- */
+.app-search{
+  background:rgba(15,15,35,.3);
+  border-left:1px solid var(--border);
+  display:flex;flex-direction:column;
+}
+.search-header{
+  padding:14px;border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+.search-bar{
+  display:flex;gap:6px;
+}
+.search-bar-inner{
+  flex:1;display:flex;align-items:center;gap:8px;
+  background:var(--card);border:1px solid var(--border);
+  border-radius:12px;padding:0 12px;
+  transition:all var(--duration-fast);
+}
+.search-bar-inner:focus-within{
+  border-color:var(--pink);
+  box-shadow:0 0 0 3px rgba(251,114,153,.1);
+}
+.search-bar-inner .search-icon{font-size:14px;opacity:.4}
+.search-bar-inner input{
+  flex:1;background:transparent;border:none;
+  color:var(--text);font-size:13px;outline:none;
+  padding:9px 0;font-family:inherit;
+}
+.search-bar-inner input::placeholder{color:var(--text-tertiary);}
+.search-bar-inner .clear-btn{
+  background:transparent;border:none;color:var(--text-tertiary);
+  cursor:pointer;font-size:12px;padding:2px;border-radius:4px;
+}
+.search-bar-inner .clear-btn:hover{color:var(--text);}
+
+.search-btn{
+  padding:0 20px;border-radius:12px;
+  background:linear-gradient(135deg,var(--pink),var(--purple));
+  color:#fff;border:none;font-size:13px;font-weight:600;
+  cursor:pointer;transition:all var(--duration-fast);
+}
+.search-btn:hover{filter:brightness(1.1);}
+
+.search-tabs{
+  display:flex;gap:4px;padding:8px 14px 0;
+  flex-shrink:0;
+}
+.st-tab{
+  padding:5px 14px;border-radius:10px;
+  font-size:12px;font-weight:500;
+  background:transparent;color:var(--text-tertiary);
+  cursor:pointer;transition:all var(--duration-fast);
+  user-select:none;
+}
+.st-tab:hover{background:var(--card);color:var(--text-secondary);}
+.st-tab.active{
+  background:rgba(251,114,153,.12);
+  color:var(--pink);
+}
+
+/* Search Results */
+.results-scroll{
+  flex:1;overflow-y:auto;padding:12px 14px;
+}
+.results-scroll::-webkit-scrollbar{width:3px}
+.results-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+.results-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+  gap:12px;
+}
+.result-card{
+  background:var(--card);border-radius:var(--radius);
+  overflow:hidden;cursor:pointer;
+  transition:all var(--duration) var(--ease-out);
+  border:1px solid transparent;
+  position:relative;
+}
+.result-card:hover{
+  background:var(--card-hover);
+  border-color:rgba(251,114,153,.15);
+  transform:translateY(-3px);
+  box-shadow:0 8px 24px rgba(0,0,0,.3);
+}
+.result-card .cover-wrap{
+  position:relative;aspect-ratio:16/10;overflow:hidden;
+  background:var(--surface-elevated);
+}
+.result-card .cover-wrap img{
+  width:100%;height:100%;object-fit:cover;
+  transition:transform var(--duration-slow);
+}
+.result-card:hover .cover-wrap img{transform:scale(1.06);}
+.result-card .duration{
+  position:absolute;bottom:6px;right:6px;
+  background:rgba(0,0,0,.75);color:#fff;
+  font-size:10px;padding:2px 8px;border-radius:6px;
+  font-variant-numeric:tabular-nums;backdrop-filter:blur(8px);
+}
+.result-card .add-btn{
+  position:absolute;top:6px;right:6px;
+  width:30px;height:30px;border-radius:50%;
+  background:rgba(0,0,0,.6);color:var(--pink);border:none;
+  font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  opacity:0;transition:all var(--duration-fast);
+  backdrop-filter:blur(8px);
+}
+.result-card:hover .add-btn{opacity:1}
+.result-card .add-btn:hover{background:var(--pink);color:#fff;transform:scale(1.1);}
+.result-card .add-btn.added{opacity:1;background:var(--pink);color:#fff;}
+.result-card .card-info{padding:10px 12px 12px;}
+.result-card .card-title{
+  font-size:12px;line-height:1.4;font-weight:500;
+  overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+  margin-bottom:4px;
+}
+.result-card .card-meta{font-size:11px;color:var(--text-tertiary);}
+
+/* Hot items */
+.hot-item{
+  display:grid;
+  grid-template-columns:20px 1fr auto;
+  gap:10px;align-items:center;
+  padding:8px 12px;border-radius:10px;
+  cursor:pointer;transition:all var(--duration-fast);
+}
+.hot-item:hover{background:var(--card);}
+.hot-item .hi-idx{
+  font-size:12px;font-weight:600;color:var(--text-tertiary);
+  text-align:center;
+}
+.hot-item .hi-idx.top1{color:var(--pink)}
+.hot-item .hi-idx.top2{color:var(--blue)}
+.hot-item .hi-idx.top3{color:var(--purple)}
+.hot-item .hi-title{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.hot-item .hi-meta{font-size:10px;color:var(--text-tertiary);}
+
+.welcome-screen{
+  text-align:center;padding:24px 0;
+}
+.welcome-screen .welcome-icon{
+  font-size:40px;opacity:.3;margin-bottom:16px;
+}
+.welcome-screen p{font-size:13px;color:var(--text-tertiary);margin-bottom:16px;}
+.quick-tags{
+  display:flex;gap:8px;flex-wrap:wrap;justify-content:center;
+}
+.quick-tag{
+  padding:6px 16px;border-radius:20px;
+  background:var(--card);border:1px solid var(--border);
+  color:var(--text-secondary);font-size:12px;
+  cursor:pointer;transition:all var(--duration-fast);
+}
+.quick-tag:hover{background:var(--card-hover);border-color:var(--border-light);color:var(--text);}
+
+/* ---- Bottom Player Bar (New Design) ---- */
+.app-playerbar{
+  height:80px;flex-shrink:0;
+  background:var(--glass);
+  backdrop-filter:blur(24px) saturate(1.5);
+  border-top:1px solid var(--glass-border);
+  display:grid;
+  grid-template-columns:300px 1fr 200px;
+  align-items:center;
+  padding:0 20px;
+  position:relative;
+}
+.app-playerbar::before{
+  content:'';position:absolute;top:0;left:10%;right:10%;height:1px;
+  background:linear-gradient(90deg,transparent,var(--pink),transparent);
+  opacity:.3;
+}
+.playerbar-left{
+  display:flex;align-items:center;gap:12px;
+}
+.playerbar-thumb{
+  width:48px;height:48px;border-radius:10px;
+  background:linear-gradient(135deg,var(--card),var(--surface));
+  object-fit:cover;
+  box-shadow:0 4px 16px rgba(0,0,0,.3);
+  flex-shrink:0;
+}
+.playerbar-info{min-width:0;}
+.playerbar-title{
+  font-size:14px;font-weight:600;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.playerbar-author{
+  font-size:11px;color:var(--text-tertiary);
+  margin-top:2px;
+}
+
+.playerbar-center{
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  max-width:600px;margin:0 auto;width:100%;
+}
+.playerbar-controls{
+  display:flex;align-items:center;gap:16px;
+}
+.playerbar-controls button{
+  width:34px;height:34px;border-radius:50%;
+  background:transparent;border:none;
+  color:var(--text-secondary);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;transition:all var(--duration-fast);
+}
+.playerbar-controls button:hover{color:var(--text);background:var(--card);}
+.playerbar-controls .play-btn{
+  width:42px;height:42px;
+  background:linear-gradient(135deg,var(--pink),var(--purple));
+  color:#fff;font-size:18px;
+  box-shadow:0 4px 16px var(--pink-glow);
+}
+.playerbar-controls .play-btn:hover{
+  transform:scale(1.06);box-shadow:0 6px 24px var(--pink-glow);
+}
+.playerbar-progress{
+  display:flex;align-items:center;gap:12px;
+  width:100%;
+}
+.playerbar-time{
+  font-size:11px;color:var(--text-tertiary);
+  font-variant-numeric:tabular-nums;min-width:36px;
+  text-align:center;
+}
+.playerbar-bar{
+  flex:1;height:4px;border-radius:2px;
+  background:var(--border);
+  cursor:pointer;position:relative;
+  transition:height var(--duration-fast);
+}
+.playerbar-bar:hover{height:6px;}
+.playerbar-fill{
+  height:100%;border-radius:2px;
+  background:linear-gradient(90deg,var(--pink),var(--purple));
+  width:35%;
+  position:relative;
+  transition:width 1s linear;
+}
+.playerbar-fill::after{
+  content:'';position:absolute;right:-4px;top:50%;
+  transform:translateY(-50%);
+  width:10px;height:10px;border-radius:50%;
+  background:#fff;box-shadow:0 0 12px var(--pink-glow);
+  opacity:0;transition:opacity var(--duration-fast);
+}
+.playerbar-bar:hover .playerbar-fill::after{opacity:1;}
+
+.playerbar-right{
+  display:flex;align-items:center;justify-content:flex-end;gap:12px;
+}
+.playerbar-mode{
+  font-size:12px;padding:4px 12px;border-radius:10px;
+  background:var(--card);border:1px solid var(--border);
+  color:var(--text-tertiary);cursor:pointer;
+  transition:all var(--duration-fast);
+}
+.playerbar-mode:hover{border-color:var(--pink);color:var(--pink);}
+.playerbar-volume{
+  display:flex;align-items:center;gap:6px;
+  color:var(--text-tertiary);
+}
+.playerbar-volume input[type=range]{
+  width:70px;height:4px;-webkit-appearance:none;
+  background:var(--border);border-radius:2px;outline:none;
+}
+.playerbar-volume input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:12px;height:12px;
+  border-radius:50%;background:var(--pink);
+  cursor:pointer;box-shadow:0 0 10px var(--pink-glow);
+}
+
+/* ===================================================================
+   SECTION: Color System
+   =================================================================== */
+.color-section{background:var(--bg);}
+.color-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+  gap:20px;
+}
+.color-swatch{
+  border-radius:var(--radius);
+  overflow:hidden;
+  background:var(--surface);
+  border:1px solid var(--border);
+  transition:all var(--duration);
+}
+.color-swatch:hover{transform:translateY(-2px);box-shadow:var(--shadow-elevated);}
+.color-preview{
+  height:100px;
+  display:flex;align-items:flex-end;padding:12px;
+}
+.color-preview .color-label{
+  font-size:10px;font-weight:600;color:rgba(255,255,255,.7);
+  background:rgba(0,0,0,.3);padding:2px 8px;
+  border-radius:6px;backdrop-filter:blur(8px);
+  font-family:'Space Grotesk',monospace;
+}
+.color-info{padding:12px 14px;}
+.color-name{font-size:13px;font-weight:600;margin-bottom:2px;}
+.color-value{font-size:11px;color:var(--text-tertiary);font-family:'Space Grotesk',monospace;}
+
+/* ===================================================================
+   SECTION: Typography
+   =================================================================== */
+.type-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+  gap:24px;
+}
+.type-card{
+  background:var(--surface);border-radius:var(--radius);
+  border:1px solid var(--border);padding:24px;
+  transition:all var(--duration);
+}
+.type-card:hover{border-color:var(--border-light);}
+.type-card .type-sample{font-size:clamp(24px,4vw,48px);font-weight:700;line-height:1.1;margin-bottom:12px;}
+.type-card .type-sample.space-grotesk{font-family:'Space Grotesk',sans-serif;}
+.type-card .type-sample.inter{font-family:'Inter',sans-serif;}
+.type-card .type-sample.noto{font-family:'Noto Sans SC',sans-serif;}
+.type-card .type-usage{font-size:12px;color:var(--text-tertiary);margin-bottom:4px;}
+.type-card .type-desc{font-size:13px;color:var(--text-secondary);line-height:1.6;}
+.type-card .type-detail{font-size:11px;color:var(--text-tertiary);margin-top:8px;font-family:'Space Grotesk',monospace;}
+
+/* ===================================================================
+   SECTION: Component Showcase
+   =================================================================== */
+.comp-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  gap:24px;
+}
+.comp-card{
+  background:var(--surface);border-radius:var(--radius);
+  border:1px solid var(--border);padding:28px;
+  transition:all var(--duration);
+}
+.comp-card:hover{border-color:var(--border-light);}
+.comp-card h4{font-size:14px;font-weight:600;margin-bottom:16px;color:var(--text-secondary);}
+.comp-demo{display:flex;flex-wrap:wrap;gap:10px;align-items:center;}
+.btn-demo{
+  padding:10px 22px;border-radius:12px;
+  font-size:13px;font-weight:600;cursor:pointer;
+  border:none;font-family:inherit;
+  transition:all var(--duration-fast) var(--ease-spring);
+}
+.btn-demo.primary{
+  background:linear-gradient(135deg,var(--pink),var(--purple));
+  color:#fff;box-shadow:0 4px 16px var(--pink-glow);
+}
+.btn-demo.primary:hover{transform:translateY(-2px) scale(1.02);box-shadow:0 8px 24px var(--pink-glow);}
+.btn-demo.secondary{
+  background:var(--card);color:var(--text);
+  border:1px solid var(--border);
+}
+.btn-demo.secondary:hover{background:var(--card-hover);border-color:var(--border-light);}
+.btn-demo.tonal{
+  background:rgba(251,114,153,.1);color:var(--pink);
+  border:1px solid rgba(251,114,153,.15);
+}
+.btn-demo.tonal:hover{background:rgba(251,114,153,.15);}
+.btn-demo.icon{
+  width:40px;height:40px;padding:0;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--card);color:var(--text-secondary);
+  border:1px solid var(--border);border-radius:10px;
+}
+.btn-demo.icon:hover{background:var(--card-hover);color:var(--text);}
+
+/* Input Demo */
+.input-demo{
+  display:flex;flex-direction:column;gap:8px;
+}
+.input-demo input{
+  padding:10px 14px;border-radius:10px;
+  background:var(--card);border:1px solid var(--border);
+  color:var(--text);font-size:13px;font-family:inherit;
+  outline:none;transition:all var(--duration-fast);
+}
+.input-demo input:focus{border-color:var(--pink);box-shadow:0 0 0 3px rgba(251,114,153,.1);}
+.input-demo input::placeholder{color:var(--text-tertiary);}
+.input-demo label{font-size:12px;color:var(--text-secondary);font-weight:500;}
+
+/* Card Demo */
+.card-demo{
+  background:var(--card);border-radius:var(--radius);
+  border:1px solid var(--border);padding:20px;
+  transition:all var(--duration);
+}
+.card-demo:hover{background:var(--card-hover);transform:translateY(-2px);box-shadow:var(--shadow-elevated);}
+.card-demo h5{font-size:14px;font-weight:600;margin-bottom:4px;}
+.card-demo p{font-size:12px;color:var(--text-tertiary);line-height:1.6;}
+
+/* Tag Demo */
+.tag{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:4px 12px;border-radius:8px;
+  font-size:11px;font-weight:500;
+  background:var(--card);color:var(--text-secondary);
+  border:1px solid var(--border);
+  transition:all var(--duration-fast);
+}
+.tag:hover{background:var(--card-hover);}
+.tag.pink{background:rgba(251,114,153,.1);color:var(--pink);border-color:rgba(251,114,153,.15);}
+.tag.blue{background:rgba(0,212,255,.1);color:var(--blue);border-color:rgba(0,212,255,.15);}
+.tag.purple{background:rgba(124,92,252,.1);color:var(--purple);border-color:rgba(124,92,252,.15);}
+
+/* Switch */
+.switch-demo{display:flex;align-items:center;gap:12px;}
+.toggle{
+  position:relative;width:40px;height:22px;
+  background:var(--border);border-radius:11px;
+  cursor:pointer;transition:all var(--duration-fast);
+}
+.toggle.active{background:var(--pink);}
+.toggle::after{
+  content:'';position:absolute;top:2px;left:2px;
+  width:18px;height:18px;border-radius:50%;
+  background:#fff;transition:all var(--duration-fast);
+  box-shadow:0 2px 4px rgba(0,0,0,.2);
+}
+.toggle.active::after{left:20px;}
+
+/* Slider Demo */
+.slider-demo input[type=range]{
+  width:100%;height:4px;-webkit-appearance:none;
+  background:var(--border);border-radius:2px;outline:none;
+}
+.slider-demo input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:14px;height:14px;
+  border-radius:50%;background:var(--pink);
+  cursor:pointer;box-shadow:0 0 10px var(--pink-glow);
+}
+
+/* ===================================================================
+   FOOTER
+   =================================================================== */
+.footer{
+  text-align:center;padding:48px 32px;
+  border-top:1px solid var(--border);
+  color:var(--text-tertiary);font-size:13px;
+}
+.footer strong{color:var(--pink);}
+
+/* ===================================================================
+   RESPONSIVE
+   =================================================================== */
+@media(max-width:900px){
+  .app-body{
+    grid-template-columns:240px 1fr 280px;
+  }
+}
+@media(max-width:768px){
+  .section{padding:60px 20px;}
+  .app-body{
+    grid-template-columns:1fr;
+    grid-template-rows:auto 1fr auto;
+  }
+  .app-sidebar,.app-search{display:none;}
+  .app-playerbar{
+    grid-template-columns:1fr;
+    grid-template-rows:auto auto;
+    height:auto;padding:12px 16px;gap:8px;
+  }
+  .playerbar-right{justify-content:center;}
+}
+
+/* Smooth scrollbar for the page */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--border-light)}
+
+/* Selection */
+::selection{background:rgba(251,114,153,.3);color:#fff;}
+</style>
+</head>
+<body>
+
+<!-- ===================================================================
+     NAVIGATION
+     =================================================================== -->
+<nav class="nav">
+  <div class="nav-logo">
+    <!-- Mini logo -->
+    <svg viewBox="0 0 28 28" fill="none">
+      <rect x="2" y="2" width="24" height="24" rx="8" fill="url(#nlg)"/>
+      <path d="M9 8v12l10-6L9 8z" fill="#fff" opacity=".9"/>
+      <defs>
+        <linearGradient id="nlg" x1="0" y1="0" x2="28" y2="28">
+          <stop offset="0%" stop-color="#FB7299"/>
+          <stop offset="100%" stop-color="#7C5CFC"/>
+        </linearGradient>
+      </defs>
+    </svg>
+    BiliMusic <span class="nav-badge">Aurora</span>
+  </div>
+  <div class="nav-links">
+    <a href="#icons" class="active">图标</a>
+    <a href="#ui">界面</a>
+    <a href="#colors">色彩</a>
+    <a href="#typography">字体</a>
+    <a href="#components">组件</a>
+  </div>
+</nav>
+
+<!-- ===================================================================
+     HERO
+     =================================================================== -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-label">
+    <span class="hero-label-dot"></span>
+    视觉重设计 · BiliMusic Aurora
+  </div>
+  <h1>冰粉与深空<br>邂逅音乐</h1>
+  <p>以 B 站经典粉色为锚点，注入深邃星空与霓虹蓝紫 —<br>打造年轻、活力、有温度的桌面音乐体验。</p>
+  <div class="hero-actions">
+    <a href="#icons" class="btn-primary">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 3h4v4H3V3zm6 0h4v4H9V3zm-6 6h4v4H3V9zm6 0h4v4H9V9z" fill="currentColor"/></svg>
+      浏览图标方案
+    </a>
+    <a href="#ui" class="btn-secondary">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 3h12v10H2V3zm1 1v8h10V4H3z" fill="currentColor"/></svg>
+      查看界面设计
+    </a>
+  </div>
+</section>
+
+<!-- ===================================================================
+     ICONS SECTION
+     =================================================================== -->
+<section class="section" id="icons">
+  <div class="section-label">Icon Design</div>
+  <h2 class="section-title">应用图标 · 7 款概念方案</h2>
+  <p class="section-desc">
+    从音乐符号、B站基因、几何抽象三个维度出发，设计了 7 款不同风格的图标。
+    每一款都遵循统一的设计语言 — 圆角规范、色彩系统、光影质感。
+  </p>
+  <div class="icon-grid">
+
+    <!-- Icon A -->
+    <div class="icon-card">
+      <span class="icon-number">A</span>
+      <div class="icon-preview icon-a">
+        <svg viewBox="0 0 64 64" fill="none">
+          <circle cx="32" cy="32" r="24" stroke="#fff" stroke-width="3" opacity=".15"/>
+          <path d="M46 32c0 7.732-6.268 14-14 14s-14-6.268-14-14 6.268-14 14-14 14 6.268 14 14z" stroke="#fff" stroke-width="2" opacity=".3"/>
+          <path d="M28 22v20l14-10-14-10z" fill="#fff"/>
+          <circle cx="28" cy="32" r="4" fill="#fff" opacity=".4"/>
+        </svg>
+      </div>
+      <h3>经典音符 · BiliNote</h3>
+      <div class="icon-meta">渐变粉 · 播放三角 + 音波</div>
+      <p class="icon-desc">B站标志性粉色渐变，结合播放按钮与音符环形。辨识度最高，适合主图标。</p>
+    </div>
+
+    <!-- Icon B -->
+    <div class="icon-card">
+      <span class="icon-number">B</span>
+      <div class="icon-preview icon-b">
+        <div class="vinyl-ring">
+          <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:32px;height:32px;border-radius:50%;border:2px solid rgba(0,212,255,.15);"></div>
+        </div>
+      </div>
+      <h3>霓虹黑胶 · Neon Vinyl</h3>
+      <div class="icon-meta">深空底 · 霓虹蓝旋转唱片</div>
+      <p class="icon-desc">黑胶唱片的抽象演绎，中心粉色光点浮动于深邃太空。科技感与复古并存。</p>
+    </div>
+
+    <!-- Icon C -->
+    <div class="icon-card">
+      <span class="icon-number">C</span>
+      <div class="icon-preview icon-c">
+        <div class="wave-group">
+          <div class="wave-bar"></div>
+          <div class="wave-bar"></div>
+          <div class="wave-bar"></div>
+          <div class="wave-bar"></div>
+          <div class="wave-bar"></div>
+          <div class="wave-bar"></div>
+          <div class="wave-bar"></div>
+        </div>
+      </div>
+      <h3>律动声波 · Play Wave</h3>
+      <div class="icon-meta">渐变紫 · 动态声波条</div>
+      <p class="icon-desc">律动的声波条形，紫色渐变充满活力。动效感强，传达音乐的能量与节奏。</p>
+    </div>
+
+    <!-- Icon D -->
+    <div class="icon-card">
+      <span class="icon-number">D</span>
+      <div class="icon-preview icon-d">
+        <div class="cassette-body">
+          <div class="cassette-hole"></div>
+          <div class="reel-dot"></div>
+          <div class="reel-dot"></div>
+          <div class="cassette-label">MUSIC</div>
+        </div>
+      </div>
+      <h3>复古卡带 · Cassette</h3>
+      <div class="icon-meta">深色底 · 磁带回卷盘</div>
+      <p class="icon-desc">怀旧卡带造型，两个卷带盘点缀粉紫渐变光晕。复古情怀与赛博朋克结合。</p>
+    </div>
+
+    <!-- Icon E -->
+    <div class="icon-card">
+      <span class="icon-number">E</span>
+      <div class="icon-preview icon-e">B</div>
+      <h3>极简 B 字 · Minimal B</h3>
+      <div class="icon-meta">深色底 · 发光字母 B</div>
+      <p class="icon-desc">极致简练的大写 B，粉色霓虹发光。致敬 B站品牌的同时保持克制高级感。</p>
+    </div>
+
+    <!-- Icon F -->
+    <div class="icon-card">
+      <span class="icon-number">F</span>
+      <div class="icon-preview icon-f">
+        <svg viewBox="0 0 64 64" fill="none">
+          <rect x="8" y="20" width="48" height="30" rx="6" stroke="#fff" stroke-width="2.5" fill="rgba(255,255,255,.08)"/>
+          <path d="M28 28v14l10-7-10-7z" fill="#fff"/>
+          <rect x="20" y="50" width="24" height="3" rx="1.5" fill="#fff" opacity=".4"/>
+          <rect x="8" y="12" width="6" height="10" rx="2" fill="#fff" opacity=".2"/>
+          <rect x="50" y="12" width="6" height="10" rx="2" fill="#fff" opacity=".2"/>
+        </svg>
+      </div>
+      <h3>B站电视 · Bili TV</h3>
+      <div class="icon-meta">渐变粉 · 经典电视造型</div>
+      <p class="icon-desc">B站品牌基因最强的方案。电视屏幕内嵌播放按钮，天线点缀增添趣味。</p>
+    </div>
+
+    <!-- Icon G -->
+    <div class="icon-card">
+      <span class="icon-number">G</span>
+      <div class="icon-preview icon-g">
+        <div class="pulse-ring"></div>
+      </div>
+      <h3>脉冲光环 · Pulsing Ring</h3>
+      <div class="icon-meta">深色底 · 霓虹蓝脉冲</div>
+      <p class="icon-desc">脉冲光环不断扩散，中心播放按钮。科技感最强，适合作为动态启动图标。</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ===================================================================
+     UI MOCKUP SECTION
+     =================================================================== -->
+<section class="mockup-section" id="ui">
+  <div style="max-width:1200px;margin:0 auto;">
+    <div class="section-label">UI Design</div>
+    <h2 class="section-title">界面重设计 · 沉浸式深空体验</h2>
+    <p class="section-desc">
+      三栏布局全面翻新 — 玻璃质感底部播放栏、霓虹渐变色进度条、圆润的搜索卡片、
+      以及精确到像素的间距系统。暗色背景下，粉色与蓝色的霓虹光晕营造沉浸氛围。
+    </p>
+  </div>
+
+  <div class="mockup-container">
+    <div class="mockup-frame">
+      <div class="app-window">
+        <!-- Title bar -->
+        <div class="app-titlebar">
+          <div class="titlebar-dots">
+            <div class="titlebar-dot"></div>
+            <div class="titlebar-dot"></div>
+            <div class="titlebar-dot"></div>
+          </div>
+          <div class="titlebar-text">
+            <strong>BiliMusic</strong>  ·  哔哩哔哩音乐播放器
+          </div>
+        </div>
+
+        <!-- Body -->
+        <div class="app-body">
+          <!-- LEFT: Playlist -->
+          <div class="app-sidebar">
+            <div class="sidebar-header">
+              <h3>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2h10v10H2V2zm1 1v8h8V3H3z" stroke="currentColor" stroke-width="1.2"/><path d="M5 5h4v4H5V5z" fill="currentColor" opacity=".2"/></svg>
+                播放列表
+              </h3>
+              <div class="sidebar-header-actions">
+                <button title="新建歌单" onclick="void(0)">+</button>
+                <button title="清空" onclick="void(0)">🗑</button>
+              </div>
+            </div>
+
+            <div class="playlist-selector-wrap">
+              <div class="playlist-selector">
+                <span class="ps-icon">🎵</span>
+                <span class="ps-name">默认歌单</span>
+                <span style="font-size:11px;color:var(--text-tertiary);margin-left:auto;">12 首</span>
+                <span class="ps-arrow">▼</span>
+              </div>
+            </div>
+
+            <div class="playlist-scroll">
+              <!-- Item 1 (active) -->
+              <div class="pl-item active">
+                <span class="pl-idx">01</span>
+                <div class="pl-thumb" style="background:linear-gradient(135deg,#FB7299,#FF4D6A);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;">▶</div>
+                <div class="pl-info">
+                  <div class="pl-title">起风了 · 买辣椒也用券</div>
+                  <div class="pl-meta">4:32 · 翻唱</div>
+                </div>
+                <span class="pl-dur">4:32</span>
+                <button class="pl-del">✕</button>
+              </div>
+              <!-- Item 2 -->
+              <div class="pl-item">
+                <span class="pl-idx">02</span>
+                <div class="pl-thumb" style="background:linear-gradient(135deg,#7C5CFC,#5B3CD0);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;">🎵</div>
+                <div class="pl-info">
+                  <div class="pl-title">光年之外 · G.E.M.邓紫棋</div>
+                  <div class="pl-meta">3:55 · MV</div>
+                </div>
+                <span class="pl-dur">3:55</span>
+                <button class="pl-del">✕</button>
+              </div>
+              <!-- Item 3 (multi-P sub-items) -->
+              <div class="pl-item">
+                <span class="pl-idx">03</span>
+                <div class="pl-thumb" style="background:linear-gradient(135deg,#00D4FF,#0099CC);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;">📁</div>
+                <div class="pl-info">
+                  <div class="pl-title">周杰伦经典合集</div>
+                  <div class="pl-meta">8 首 · 合集</div>
+                </div>
+                <span class="pl-dur">32:10</span>
+                <button class="pl-del">✕</button>
+              </div>
+              <!-- Sub-item -->
+              <div class="pl-subitem" style="background:rgba(251,114,153,.05);">
+                <span class="pl-sidx">·</span>
+                <div class="pl-title" style="color:var(--pink);">晴天</div>
+                <span class="pl-meta">4:29</span>
+              </div>
+              <div class="pl-subitem">
+                <span class="pl-sidx">·</span>
+                <div class="pl-title">七里香</div>
+                <span class="pl-meta">4:55</span>
+              </div>
+              <div class="pl-subitem">
+                <span class="pl-sidx">·</span>
+                <div class="pl-title">稻香</div>
+                <span class="pl-meta">3:42</span>
+              </div>
+              <!-- Item 4 -->
+              <div class="pl-item">
+                <span class="pl-idx">04</span>
+                <div class="pl-thumb" style="background:linear-gradient(135deg,#FFD700,#FFA500);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;">🎹</div>
+                <div class="pl-info">
+                  <div class="pl-title">River Flows In You</div>
+                  <div class="pl-meta">4:18 · 纯音乐</div>
+                </div>
+                <span class="pl-dur">4:18</span>
+                <button class="pl-del">✕</button>
+              </div>
+              <!-- Item 5 -->
+              <div class="pl-item">
+                <span class="pl-idx">05</span>
+                <div class="pl-thumb" style="background:linear-gradient(135deg,#FF6B6B,#EE5A24);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;">🎤</div>
+                <div class="pl-info">
+                  <div class="pl-title">孤勇者 · 陈奕迅</div>
+                  <div class="pl-meta">4:16 · 现场</div>
+                </div>
+                <span class="pl-dur">4:16</span>
+                <button class="pl-del">✕</button>
+              </div>
+              <!-- Item 6 -->
+              <div class="pl-item">
+                <span class="pl-idx">06</span>
+                <div class="pl-thumb" style="background:linear-gradient(135deg,#2ED573,#7BED9F);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;">🌿</div>
+                <div class="pl-info">
+                  <div class="pl-title">起风了 ( instrumental )</div>
+                  <div class="pl-meta">4:30 · 纯音乐</div>
+                </div>
+                <span class="pl-dur">4:30</span>
+                <button class="pl-del">✕</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- CENTER: Player -->
+          <div class="app-player">
+            <div class="player-placeholder">
+              <div class="big-icon">
+                <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                  <path d="M14 10v20l16-10L14 10z" fill="url(#pp)" opacity=".8"/>
+                  <defs>
+                    <linearGradient id="pp" x1="14" y1="10" x2="30" y2="30">
+                      <stop stop-color="#FB7299"/>
+                      <stop offset="1" stop-color="#7C5CFC"/>
+                    </linearGradient>
+                  </defs>
+                </svg>
+              </div>
+              <p>在 B 站发现音乐 · 搜索你喜欢的歌曲</p>
+              <div style="display:flex;gap:6px;">
+                <span class="tag pink">B站内嵌</span>
+                <span class="tag blue">无损音质</span>
+                <span class="tag purple">多P合集</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- RIGHT: Search -->
+          <div class="app-search">
+            <div class="search-header">
+              <div class="search-bar">
+                <div class="search-bar-inner">
+                  <span class="search-icon">🔍</span>
+                  <input type="text" placeholder="搜索B站音乐..." value="周杰伦">
+                  <button class="clear-btn">✕</button>
+                </div>
+                <button class="search-btn">搜索</button>
+              </div>
+              <div class="search-tabs">
+                <span class="st-tab">🔥 推荐歌曲</span>
+                <span class="st-tab active">🔍 搜索结果</span>
+              </div>
+            </div>
+            <div class="results-scroll">
+              <div class="results-grid">
+                <div class="result-card">
+                  <div class="cover-wrap">
+                    <div style="width:100%;height:100%;background:linear-gradient(135deg,#1A1A35,#0D0D1A);display:flex;align-items:center;justify-content:center;">
+                      <span style="font-size:24px;">🎤</span>
+                    </div>
+                    <span class="duration">4:29</span>
+                    <button class="add-btn">+</button>
+                  </div>
+                  <div class="card-info">
+                    <div class="card-title">晴天 · 周杰伦</div>
+                    <div class="card-meta">周杰伦 · 4.2亿播放</div>
+                  </div>
+                </div>
+                <div class="result-card">
+                  <div class="cover-wrap">
+                    <div style="width:100%;height:100%;background:linear-gradient(135deg,#2D1B69,#0D0D1A);display:flex;align-items:center;justify-content:center;">
+                      <span style="font-size:24px;">🎹</span>
+                    </div>
+                    <span class="duration">3:55</span>
+                    <button class="add-btn">+</button>
+                  </div>
+                  <div class="card-info">
+                    <div class="card-title">七里香 · 周杰伦</div>
+                    <div class="card-meta">周杰伦 · 3.8亿播放</div>
+                  </div>
+                </div>
+                <div class="result-card">
+                  <div class="cover-wrap">
+                    <div style="width:100%;height:100%;background:linear-gradient(135deg,#0D4F4F,#0D0D1A);display:flex;align-items:center;justify-content:center;">
+                      <span style="font-size:24px;">🎸</span>
+                    </div>
+                    <span class="duration">4:16</span>
+                    <button class="add-btn added">✓</button>
+                  </div>
+                  <div class="card-info">
+                    <div class="card-title">稻香 · 周杰伦</div>
+                    <div class="card-meta">周杰伦 · 3.5亿播放</div>
+                  </div>
+                </div>
+                <div class="result-card">
+                  <div class="cover-wrap">
+                    <div style="width:100%;height:100%;background:linear-gradient(135deg,#4A1A4A,#0D0D1A);display:flex;align-items:center;justify-content:center;">
+                      <span style="font-size:24px;">🎶</span>
+                    </div>
+                    <span class="duration">3:42</span>
+                    <button class="add-btn">+</button>
+                  </div>
+                  <div class="card-info">
+                    <div class="card-title">告白气球 · 周杰伦</div>
+                    <div class="card-meta">周杰伦 · 2.9亿播放</div>
+                  </div>
+                </div>
+                <div class="result-card">
+                  <div class="cover-wrap">
+                    <div style="width:100%;height:100%;background:linear-gradient(135deg,#1A3A1A,#0D0D1A);display:flex;align-items:center;justify-content:center;">
+                      <span style="font-size:24px;">🎻</span>
+                    </div>
+                    <span class="duration">4:45</span>
+                    <button class="add-btn">+</button>
+                  </div>
+                  <div class="card-info">
+                    <div class="card-title">夜曲 · 周杰伦</div>
+                    <div class="card-meta">周杰伦 · 2.6亿播放</div>
+                  </div>
+                </div>
+                <div class="result-card">
+                  <div class="cover-wrap">
+                    <div style="width:100%;height:100%;background:linear-gradient(135deg,#4A2A1A,#0D0D1A);display:flex;align-items:center;justify-content:center;">
+                      <span style="font-size:24px;">🎷</span>
+                    </div>
+                    <span class="duration">4:02</span>
+                    <button class="add-btn">+</button>
+                  </div>
+                  <div class="card-info">
+                    <div class="card-title">Mojito · 周杰伦</div>
+                    <div class="card-meta">周杰伦 · 2.3亿播放</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- BOTTOM: Player bar (reimagined) -->
+        <div class="app-playerbar">
+          <div class="playerbar-left">
+            <div class="playerbar-thumb" style="background:linear-gradient(135deg,#FB7299,#FF4D6A);display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;">▶</div>
+            <div class="playerbar-info">
+              <div class="playerbar-title">起风了</div>
+              <div class="playerbar-author">买辣椒也用券 · 翻唱</div>
+            </div>
+          </div>
+          <div class="playerbar-center">
+            <div class="playerbar-controls">
+              <button>⏮</button>
+              <button class="play-btn">⏸</button>
+              <button>⏭</button>
+            </div>
+            <div class="playerbar-progress">
+              <span class="playerbar-time">1:24</span>
+              <div class="playerbar-bar">
+                <div class="playerbar-fill"></div>
+              </div>
+              <span class="playerbar-time">4:32</span>
+            </div>
+          </div>
+          <div class="playerbar-right">
+            <button class="playerbar-mode">🔁 列表循环</button>
+            <div class="playerbar-volume">
+              <span>🔊</span>
+              <input type="range" min="0" max="100" value="75">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================================================================
+     COLOR SYSTEM
+     =================================================================== -->
+<section class="section color-section" id="colors">
+  <div class="section-label">Color System</div>
+  <h2 class="section-title">色彩系统 · 冰粉与深空</h2>
+  <p class="section-desc">
+    基于 B 站品牌粉 #FB7299 构建的完整色彩体系。深空底色衬托霓虹光晕，
+    蓝紫渐变作为辅助色，营造年轻、科技、音乐的氛围。
+  </p>
+  <div class="color-grid">
+
+    <div class="color-swatch">
+      <div class="color-preview" style="background:#FB7299;">
+        <span class="color-label">Primary</span>
+      </div>
+      <div class="color-info">
+        <div class="color-name">品牌粉 · Brand Pink</div>
+        <div class="color-value">#FB7299 · #FF8DB5 (light)</div>
+      </div>
+    </div>
+
+    <div class="color-swatch">
+      <div class="color-preview" style="background:#00D4FF;">
+        <span class="color-label">Secondary</span>
+      </div>
+      <div class="color-info">
+        <div class="color-name">霓虹蓝 · Neon Blue</div>
+        <div class="color-value">#00D4FF · 科技感点缀</div>
+      </div>
+    </div>
+
+    <div class="color-swatch">
+      <div class="color-preview" style="background:#7C5CFC;">
+        <span class="color-label">Tertiary</span>
+      </div>
+      <div class="color-info">
+        <div class="color-name">星空紫 · Space Purple</div>
+        <div class="color-value">#7C5CFC · 渐变辅助色</div>
+      </div>
+    </div>
+
+    <div class="color-swatch">
+      <div class="color-preview" style="background:#07070f;">
+        <span class="color-label">Background</span>
+      </div>
+      <div class="color-info">
+        <div class="color-name">深空底 · Deep Space</div>
+        <div class="color-value">#07070f · #0a0a18 (surface)</div>
+      </div>
+    </div>
+
+    <div class="color-swatch">
+      <div class="color-preview" style="background:#161630;">
+        <span class="color-label">Surface</span>
+      </div>
+      <div class="color-info">
+        <div class="color-name">浮层面 · Elevated</div>
+        <div class="color-value">#0f0f23 · #161630</div>
+      </div>
+    </div>
+
+    <div class="color-swatch">
+      <div class="color-preview" style="background:linear-gradient(135deg,#FB7299,#7C5CFC);">
+        <span class="color-label">Gradient</span>
+      </div>
+      <div class="color-info">
+        <div class="color-name">粉紫渐变 · Pink-Purple</div>
+        <div class="color-value">品牌主渐变 · 按钮/进度条</div>
+      </div>
+    </div>
+
+    <div class="color-swatch">
+      <div class="color-preview" style="background:#28C840;">
+        <span class="color-label">Success</span>
+      </div>
+      <div class="color-info">
+        <div class="color-name">成功绿 · Success</div>
+        <div class="color-value">#28C840 · 状态反馈</div>
+      </div>
+    </div>
+
+    <div class="color-swatch">
+      <div class="color-preview" style="background:#FF5F57;">
+        <span class="color-label">Error</span>
+      </div>
+      <div class="color-info">
+        <div class="color-name">错误红 · Error</div>
+        <div class="color-value">#FF5F57 · 警告/删除</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ===================================================================
+     TYPOGRAPHY
+     =================================================================== -->
+<section class="section" id="typography">
+  <div class="section-label">Typography</div>
+  <h2 class="section-title">字体系统 · 三款字体组合</h2>
+  <p class="section-desc">
+    Space Grotesk 展示活力、Inter 清晰易读、Noto Sans SC 中文优雅。
+    三款字体覆盖从标题到正文的全部场景。
+  </p>
+  <div class="type-grid">
+
+    <div class="type-card">
+      <div class="type-sample space-grotesk" style="background:linear-gradient(135deg,var(--pink),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">
+        BiliMusic
+      </div>
+      <div class="type-usage">Display · 展示字体</div>
+      <div class="type-desc"><strong>Space Grotesk</strong> · 现代几何无衬线，用于 Logo、大标题、数字。有科技感但不冰冷。</div>
+      <div class="type-detail">font-family: 'Space Grotesk', sans-serif · 字重 400-700</div>
+    </div>
+
+    <div class="type-card">
+      <div class="type-sample inter">
+        Aa 在B站发现音乐
+      </div>
+      <div class="type-usage">Body · 正文字体</div>
+      <div class="type-desc"><strong>Inter</strong> · 清晰、中性的瑞士风格字体，用于按钮、标签、正文等 UI 元素。</div>
+      <div class="type-detail">font-family: 'Inter', sans-serif · 字重 300-800</div>
+    </div>
+
+    <div class="type-card">
+      <div class="type-sample noto">
+        在B站发现音乐 · 搜索你喜欢的歌曲
+      </div>
+      <div class="type-usage">Chinese · 中文场景</div>
+      <div class="type-desc"><strong>Noto Sans SC</strong> · Google 思源黑体，中文阅读体验最佳，与 Inter 视觉协调。</div>
+      <div class="type-detail">font-family: 'Noto Sans SC', sans-serif · 字重 300-700</div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ===================================================================
+     COMPONENTS
+     =================================================================== -->
+<section class="section" id="components">
+  <div class="section-label">Components</div>
+  <h2 class="section-title">组件库 · 核心 UI 元件</h2>
+  <p class="section-desc">
+    统一的圆角规范 (12px)、弹性动效曲线、粉紫渐变系统。
+    每个组件都经过精调，保持视觉一致性。
+  </p>
+  <div class="comp-grid">
+
+    <!-- Buttons -->
+    <div class="comp-card">
+      <h4>按钮系统 · Buttons</h4>
+      <div class="comp-demo">
+        <button class="btn-demo primary">播放</button>
+        <button class="btn-demo secondary">取消</button>
+        <button class="btn-demo tonal">+ 添加</button>
+        <button class="btn-demo icon">🔍</button>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
+        <span class="tag">Filled (Primary)</span>
+        <span class="tag">Outlined</span>
+        <span class="tag">Tonal</span>
+        <span class="tag">Icon</span>
+      </div>
+    </div>
+
+    <!-- Inputs -->
+    <div class="comp-card">
+      <h4>输入框 · Inputs</h4>
+      <div class="input-demo">
+        <label>搜索歌曲</label>
+        <input type="text" placeholder="输入关键词..." value="周杰伦">
+      </div>
+      <div style="margin-top:12px;">
+        <span class="tag blue">12px 圆角</span>
+        <span class="tag">Focus: 粉色边框 + 发光</span>
+      </div>
+    </div>
+
+    <!-- Cards -->
+    <div class="comp-card">
+      <h4>卡片 · Cards</h4>
+      <div class="card-demo">
+        <h5>起风了</h5>
+        <p>买辣椒也用券 · 翻唱 · 播放量 1.2亿</p>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:4px;">
+        <span class="tag">Hover 上浮</span>
+        <span class="tag pink">8px 圆角</span>
+      </div>
+    </div>
+
+    <!-- Tags / Chips -->
+    <div class="comp-card">
+      <h4>标签 · Tags / Chips</h4>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        <span class="tag pink">B站音乐</span>
+        <span class="tag blue">无损</span>
+        <span class="tag purple">合集</span>
+        <span class="tag">翻唱</span>
+        <span class="tag">纯音乐</span>
+        <span class="tag" style="background:var(--card);">MV</span>
+      </div>
+      <div style="margin-top:12px;">
+        <span class="tag">多色变体 · 8px 圆角</span>
+      </div>
+    </div>
+
+    <!-- Toggle -->
+    <div class="comp-card">
+      <h4>开关 · Toggle</h4>
+      <div class="switch-demo">
+        <div class="toggle active" onclick="this.classList.toggle('active')"></div>
+        <span style="font-size:13px;">单曲循环</span>
+      </div>
+      <div class="switch-demo" style="margin-top:8px;">
+        <div class="toggle" onclick="this.classList.toggle('active')"></div>
+        <span style="font-size:13px;color:var(--text-tertiary);">随机播放</span>
+      </div>
+    </div>
+
+    <!-- Slider -->
+    <div class="comp-card">
+      <h4>滑块 · Slider</h4>
+      <div class="slider-demo" style="padding:12px 0;">
+        <input type="range" min="0" max="100" value="65">
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-tertiary);">
+        <span>音量</span>
+        <span>65%</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ===================================================================
+     FOOTER
+     =================================================================== -->
+<footer class="footer">
+  <p>BiliMusic <strong>Aurora</strong> · 视觉重设计 · 2026</p>
+  <p style="margin-top:4px;font-size:12px;">基于 BiliMusic Electron 桌面应用 · 不修改原项目代码</p>
+</footer>
+
+<script>
+// Smooth scroll for nav links
+document.querySelectorAll('.nav-links a').forEach(a => {
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    const target = document.querySelector(a.getAttribute('href'));
+    if(target) target.scrollIntoView({behavior:'smooth',block:'start'});
+    document.querySelectorAll('.nav-links a').forEach(l=>l.classList.remove('active'));
+    a.classList.add('active');
+  });
+});
+</script>
+
+</body>
+</html>

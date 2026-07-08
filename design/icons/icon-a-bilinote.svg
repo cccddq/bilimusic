@@ -1,0 +1,22 @@
+<svg viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgA" x1="0" y1="0" x2="256" y2="256">
+      <stop offset="0%" stop-color="#FB7299"/>
+      <stop offset="100%" stop-color="#FF4D6A"/>
+    </linearGradient>
+    <linearGradient id="ringA" x1="0" y1="0" x2="256" y2="256">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.2)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0.05)"/>
+    </linearGradient>
+  </defs>
+  <!-- Background rounded rect -->
+  <rect x="0" y="0" width="256" height="256" rx="48" fill="url(#bgA)"/>
+  <!-- Outer ring -->
+  <circle cx="128" cy="128" r="92" stroke="rgba(255,255,255,0.12)" stroke-width="6"/>
+  <!-- Sound wave arcs -->
+  <path d="M180 128c0 28.7-23.3 52-52 52s-52-23.3-52-52 23.3-52 52-52 52 23.3 52 52z" stroke="rgba(255,255,255,0.2)" stroke-width="4" fill="none"/>
+  <!-- Play triangle -->
+  <path d="M112 96v64l48-32-48-32z" fill="#fff"/>
+  <!-- Small decorative dot -->
+  <circle cx="112" cy="128" r="12" fill="rgba(255,255,255,0.25)"/>
+</svg>

@@ -1,0 +1,21 @@
+<svg viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgG" x1="0" y1="0" x2="256" y2="256">
+      <stop offset="0%" stop-color="#0D0D1A"/>
+      <stop offset="100%" stop-color="#1A1A35"/>
+    </linearGradient>
+    <filter id="glowG">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect x="0" y="0" width="256" height="256" rx="48" fill="url(#bgG)"/>
+  <rect x="3" y="3" width="250" height="250" rx="45" stroke="rgba(0,212,255,0.1)" stroke-width="3"/>
+  <!-- Outer pulsing ring -->
+  <circle cx="128" cy="128" r="80" stroke="rgba(0,212,255,0.08)" stroke-width="2"/>
+  <circle cx="128" cy="128" r="68" stroke="rgba(0,212,255,0.12)" stroke-width="2" stroke-dasharray="4 6"/>
+  <!-- Main ring -->
+  <circle cx="128" cy="128" r="54" stroke="#00D4FF" stroke-width="3" fill="rgba(0,212,255,0.03)" filter="url(#glowG)"/>
+  <!-- Play triangle -->
+  <path d="M118 108v40l24-20-24-20z" fill="#00D4FF" filter="url(#glowG)"/>
+</svg>
