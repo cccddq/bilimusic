@@ -42,6 +42,7 @@ let _expandedItems = {};        // 歌单中已展开的多P视频索引
 let _currentPageIndex = -1;     // 当前播放的子集索引 (-1 = 不是子集)
 let _pageStartTime = 0;         // 子集起始偏移秒数
 let _playerSuppressBounds = false; // 临时阻止发送坐标到播放器视图
+let _playerFullscreen = false;   // 应用级全屏：播放器覆盖整个窗口
 
 const MODE_ICONS = { 'list-loop': '🔁', 'single-loop': '🔂', 'random': '🔀', 'sequential': '➡️' };
 const MODE_LABELS = { 'list-loop': '列表循环', 'single-loop': '单曲循环', 'random': '随机播放', 'sequential': '顺序播放' };
@@ -312,15 +313,19 @@ function switchSearchTab(tab) {
 // 把中间列占位区相对窗口内容区的坐标发给主进程，让 WebContentsView 精确覆盖。
 function relayoutPlayerView() {
   if (_playerSuppressBounds) return;
-  const el = document.getElementById('playerFrameWrap');
-  if (!el) return;
-  const rect = el.getBoundingClientRect();
-  window.bili.playerSetBounds({
-    x: Math.round(rect.left),
-    y: Math.round(rect.top),
-    width: Math.round(rect.width),
-    height: Math.round(rect.height),
-  });
+  let rect;
+  if (_playerFullscreen) {
+    // 全屏：播放器覆盖整个窗口（保留底栏）
+    const bar = document.getElementById('playerBar');
+    const barH = bar ? bar.getBoundingClientRect().height : 80;
+    rect = { x: 0, y: 0, width: window.innerWidth, height: Math.max(0, window.innerHeight - barH) };
+  } else {
+    const el = document.getElementById('playerFrameWrap');
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    rect = { x: Math.round(r.left), y: Math.round(r.top), width: Math.round(r.width), height: Math.round(r.height) };
+  }
+  window.bili.playerSetBounds(rect);
 }
 
 // ============ PLAYLIST ============
@@ -678,6 +683,21 @@ document.addEventListener('click', (e) => {
 function enterPlayerFullscreen() {
   window.bili.playerPageFullscreen();
 }
+
+// ============ 全屏（播放器覆盖窗口，保留底栏） ============
+function togglePlayerFullscreen() {
+  _playerFullscreen = !_playerFullscreen;
+  const btn = document.getElementById('fullscreenBtn');
+  if (btn) {
+    btn.textContent = _playerFullscreen ? '⛶ 退出' : '⛶ 全屏';
+    btn.title = _playerFullscreen ? '退出全屏' : '播放窗口全屏';
+  }
+  relayoutPlayerView();
+}
+
+// 以下已经整合进 relayoutPlayerView() 中：
+// _playerFullscreen = true  → playerView 覆盖整个窗口（保留底栏）
+// _playerFullscreen = false → playerView 显示在中间列
 
 // ============ PLAYER (内嵌 WebContentsView) ============
 function playByIndex(index) {
@@ -1396,7 +1416,7 @@ document.addEventListener('keydown', e => {
     case 'ArrowLeft': e.preventDefault(); prev(); break;
     case 'ArrowRight': e.preventDefault(); next(); break;
     case 'm': case 'M': toggleMode(); break;
-    case 'Escape': stopPlayback(); break;
+    case 'Escape': if (_playerFullscreen) togglePlayerFullscreen(); else stopPlayback(); break;
   }
 });
 

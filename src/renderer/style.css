@@ -178,6 +178,13 @@ body {
   background: rgba(15, 15, 35, .35);
   border-right: 1px solid var(--border);
   position: relative;
+}
+
+/* ===== 全屏按钮悬停 */
+#fullscreenBtn:hover {
+  color: var(--pink) !important;
+  background: var(--card) !important;
+}
   min-width: 180px;
   max-width: 600px;
 }
