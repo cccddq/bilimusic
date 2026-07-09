@@ -403,37 +403,54 @@ function renderPlaylist() {
 
   if (songs.length === 0) {
     empty.style.display = 'block';
-    container.querySelectorAll('.pl-item, .pl-subitem').forEach(el => el.remove());
+    container.querySelectorAll('.pl-card, .pl-card-grid, .pl-subitem').forEach(el => el.remove());
     return;
   }
   empty.style.display = 'none';
 
   let html = '';
+  let gridOpen = false;
+
+  function openGrid() {
+    if (!gridOpen) { html += '<div class="pl-card-grid">'; gridOpen = true; }
+  }
+  function closeGrid() {
+    if (gridOpen) { html += '</div>'; gridOpen = false; }
+  }
+
   songs.forEach((item, i) => {
     const hasPages = item.pages && item.pages.length > 1;
     const isExpanded = _expandedItems[i];
     const active = i === currentIndex && isPlaying ? ' active' : '';
-    const multiIcon = hasPages ? (isExpanded ? '📂' : '📁') : '';
+    const cover = item.cover || '';
+    const pagesBadge = hasPages ? `<span class="pl-pages-badge">${isExpanded ? '📂' : '📁'} ${item.pages.length}集</span>` : '';
     
-    html += `
-      <div class="pl-item${active}" draggable="true"
-           ondragstart="handleDragStart(event, ${i})" ondragend="handleDragEnd(event)"
-           oncontextmenu="showPlaylistContextMenu(event, ${i})">
-        <span class="pl-idx">${i + 1}</span>
-        <img class="pl-thumb" data-src="${escapeAttr(item.cover || '')}" alt="">
-        <div class="pl-info" ondblclick="playByIndex(${i})">
-          <div class="pl-title" title="${escapeAttr(item.title || '未知')}">${multiIcon ? multiIcon + ' ' : ''}${escapeHtml(item.title || '未知')}</div>
-          <div class="pl-meta">${escapeHtml(item.author || '')} · ${formatDuration(item.duration || 0)}${hasPages ? ' · ' + item.pages.length + 'P' : ''}</div>
-        </div>
-        ${hasPages ? `<button class="pl-expand" onclick="event.stopPropagation();togglePlaylistExpand(${i})" title="${isExpanded ? '收起' : '展开'}子集">${isExpanded ? '▲' : '▼'}</button>` : ''}
-        <button class="pl-del" onclick="removeFromPlaylist(${i})" title="移除">✕</button>
-      </div>`;
-
-    // 展开的子集
-    if (hasPages && isExpanded) {
+    // 如果是展开的合集，先关闭网格，后面跟子集列表
+    if (isExpanded && hasPages) {
+      closeGrid();
+      html += `
+        <div style="margin:0 6px;">
+        <div class="pl-card${active}" draggable="true"
+             ondragstart="handleDragStart(event, ${i})" ondragend="handleDragEnd(event)"
+             onclick="playByIndex(${i})"
+             oncontextmenu="showPlaylistContextMenu(event, ${i})">
+          <div class="pl-cover">
+            ${cover ? `<img data-src="${escapeAttr(cover)}" alt="" loading="lazy">` : '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--text-tertiary);font-size:20px;">🎵</div>'}
+            <span class="pl-index">${i + 1}</span>
+            ${item.duration ? `<span class="pl-duration">${formatDuration(item.duration)}</span>` : ''}
+            ${pagesBadge}
+          </div>
+          <button class="pl-del" onclick="event.stopPropagation();removeFromPlaylist(${i})" title="移除">✕</button>
+          <div class="pl-info">
+            <div class="pl-title" title="${escapeAttr(item.title || '未知')}">${escapeHtml(item.title || '未知')}</div>
+            <div class="pl-meta">${escapeHtml(item.author || '')}</div>
+            <button class="pl-expand-btn" onclick="event.stopPropagation();togglePlaylistExpand(${i})" title="收起子集">▲ 收起 ${item.pages.length}集</button>
+          </div>
+        </div>`;
+      // 子集列表（紧跟在卡片下面）
       item.pages.forEach((page, pi) => {
         html += `
-          <div class="pl-subitem" onclick="playPage(${i}, ${pi})" oncontextmenu="event.stopPropagation();showPlaylistContextMenu(event, ${i})">
+          <div class="pl-subitem pl-subitem-spring" onclick="playPage(${i}, ${pi})" oncontextmenu="event.stopPropagation();showPlaylistContextMenu(event, ${i})">
             <span class="pl-sidx">${pi + 1}</span>
             <div class="pl-info">
               <div class="pl-title" title="${escapeAttr(page.part || '第' + (pi + 1) + '段')}">${escapeHtml(page.part || '第' + (pi + 1) + '段')}</div>
@@ -441,16 +458,39 @@ function renderPlaylist() {
             </div>
           </div>`;
       });
+      html += `</div>`;
+    } else {
+      // 普通卡片，在网格中
+      openGrid();
+      html += `
+        <div class="pl-card${active}" draggable="true"
+             ondragstart="handleDragStart(event, ${i})" ondragend="handleDragEnd(event)"
+             onclick="playByIndex(${i})"
+             oncontextmenu="showPlaylistContextMenu(event, ${i})">
+          <div class="pl-cover">
+            ${cover ? `<img data-src="${escapeAttr(cover)}" alt="" loading="lazy">` : '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--text-tertiary);font-size:20px;">🎵</div>'}
+            <span class="pl-index">${i + 1}</span>
+            ${item.duration ? `<span class="pl-duration">${formatDuration(item.duration)}</span>` : ''}
+            ${pagesBadge}
+          </div>
+          <button class="pl-del" onclick="event.stopPropagation();removeFromPlaylist(${i})" title="移除">✕</button>
+          <div class="pl-info">
+            <div class="pl-title" title="${escapeAttr(item.title || '未知')}">${escapeHtml(item.title || '未知')}</div>
+            <div class="pl-meta">${escapeHtml(item.author || '')}</div>
+            ${hasPages ? `<button class="pl-expand-btn" onclick="event.stopPropagation();togglePlaylistExpand(${i})" title="展开子集">▼ 展开 ${item.pages.length}集</button>` : ''}
+          </div>
+        </div>`;
     }
   });
+  closeGrid();
 
-  container.querySelectorAll('.pl-item, .pl-subitem').forEach(el => el.remove());
+  container.querySelectorAll('.pl-card, .pl-card-grid, .pl-subitem').forEach(el => el.remove());
   const temp = document.createElement('div');
   temp.innerHTML = html;
   while (temp.firstChild) container.appendChild(temp.firstChild);
 
-  // 异步加载缩略图
-  container.querySelectorAll('.pl-thumb').forEach(img => {
+  // 异步加载封面图
+  container.querySelectorAll('.pl-cover img[data-src]').forEach(img => {
     const src = img.getAttribute('data-src');
     if (src) proxyImg(src).then(d => { if (d) img.src = d; });
   });
@@ -460,25 +500,46 @@ function renderPlaylist() {
 function scrollPlaylistToItem(index) {
   const container = document.getElementById('playlist');
   if (!container) return;
-  const items = container.querySelectorAll('.pl-item');
+  const items = container.querySelectorAll('.pl-card');
   if (index >= 0 && index < items.length) {
     const target = items[index];
     target.scrollIntoView({ block: 'center', behavior: 'smooth' });
     // 临时高亮动画
-    target.style.transition = 'background 0.3s';
-    target.style.background = 'rgba(251,114,153,0.2)';
-    setTimeout(() => { target.style.background = ''; }, 1500);
+    target.style.transition = 'box-shadow 0.3s, border-color 0.3s';
+    target.style.borderColor = 'var(--pink)';
+    target.style.boxShadow = '0 0 12px var(--pink-glow)';
+    setTimeout(() => {
+      target.style.borderColor = '';
+      target.style.boxShadow = '';
+    }, 1500);
   }
 }
 
 /** 展开/收起多P视频的子集目录 */
 function togglePlaylistExpand(index) {
-  if (_expandedItems[index]) {
+  const wasExpanded = !!_expandedItems[index];
+  if (wasExpanded) {
     delete _expandedItems[index];
   } else {
     _expandedItems[index] = true;
   }
   renderPlaylist();
+
+  // 展开后：把该卡片滚动到歌单顶部，子集像弹簧一样展开
+  if (!wasExpanded) {
+    setTimeout(() => {
+      const container = document.getElementById('playlist');
+      if (!container) return;
+      const cards = container.querySelectorAll('.pl-card');
+      if (cards[index]) {
+        cards[index].scrollIntoView({ block: 'start', behavior: 'smooth' });
+      }
+      // 给所有子集添加展开动画类
+      container.querySelectorAll('.pl-subitem').forEach(el => {
+        el.classList.add('pl-subitem-spring');
+      });
+    }, 50);
+  }
 }
 
 /** 播放多P视频中的某一分集 */
@@ -507,8 +568,6 @@ function playPage(parentIndex, pageIndex) {
   relayoutPlayerView();
   
   updatePlayerUI();  // 自动显示子集标题
-  renderPlaylist();
-  renderPlaylist();
   showToast(`▶ ${page.part || '第' + (pageIndex + 1) + '段'}`, '');
 
   // 进入播放器全屏（隐藏左右侧栏）
@@ -521,9 +580,9 @@ function handleDragEnd(e) { e.target.classList.remove('drag-ghost'); dragIdx = -
 function handleDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
 function handleDrop(e) {
   e.preventDefault();
-  const target = e.target.closest('.pl-item');
+  const target = e.target.closest('.pl-card');
   if (!target || dragIdx < 0) return;
-  const items = [...document.querySelectorAll('.pl-item')];
+  const items = [...document.querySelectorAll('.pl-card')];
   const dropIdx = items.indexOf(target);
   if (dropIdx < 0 || dropIdx === dragIdx) return;
   const songs = getPlaylist();
