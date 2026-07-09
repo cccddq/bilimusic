@@ -1,7 +1,7 @@
 {
   "name": "bilimusic",
-  "version": "4.4.0",
-  "description": "BiliMusic Aurora v4.4 - 哔哩哔哩音乐播放器 (Electron 桌面版)",
+  "version": "4.5.0",
+  "description": "BiliMusic Aurora v4.5 - 哔哩哔哩音乐播放器 (Electron 桌面版)",
   "main": "src/main.js",
   "author": "BiliMusic",
   "license": "MIT",

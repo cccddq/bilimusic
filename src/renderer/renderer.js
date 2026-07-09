@@ -442,6 +442,7 @@ function initSidebarResize() {
   handle.addEventListener('mousedown', (e) => {
     isDragging = true;
     handle.classList.add('active');
+    document.body.classList.add('sidebar-resizing');
     document.body.style.cursor = 'col-resize';
     document.body.style.userSelect = 'none';
     e.preventDefault();
@@ -459,6 +460,7 @@ function initSidebarResize() {
     if (isDragging) {
       isDragging = false;
       handle.classList.remove('active');
+      document.body.classList.remove('sidebar-resizing');
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
     }
