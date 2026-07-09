@@ -35,7 +35,6 @@
 
   <!-- Left: Playlist -->
   <div class="col col-playlist" id="sidebar">
-    <div class="sidebar-resize-handle" id="sidebarResizeHandle"></div>
     <div class="col-header">
       <div id="playlistSelector" style="position:relative;flex:1;"></div>
       <span class="count" id="playlistCount" style="font-size:12px;color:var(--text-secondary);margin-right:4px;">(0)</span>
@@ -49,6 +48,9 @@
       </div>
     </div>
   </div>
+
+  <!-- Resize Handle -->
+  <div class="sidebar-handle-col" id="sidebarResizeHandle"></div>
 
   <!-- Center: Player (WebContentsView 叠在此区域上) -->
   <div class="col col-player" id="playerCol">

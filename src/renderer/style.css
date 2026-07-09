@@ -162,7 +162,7 @@ body {
 /* ===== MAIN 3-COLUMN LAYOUT ===== */
 .main-grid {
   display: grid;
-  grid-template-columns: var(--sidebar-width, 280px) 1fr 340px;
+  grid-template-columns: var(--sidebar-width, 280px) 5px 1fr 340px;
   height: calc(100vh - 52px - 72px);
   overflow: hidden;
   flex: 1;
@@ -300,7 +300,7 @@ body {
 }
 
 .pl-item .pl-title {
-  font-size: 12px;
+  font-size: 11px !important;
   font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -308,7 +308,7 @@ body {
 }
 
 .pl-item .pl-meta {
-  font-size: 10px;
+  font-size: 9px !important;
   color: var(--text-tertiary);
   margin-top: 1px;
 }
@@ -422,51 +422,36 @@ body {
   line-height: 1.6;
 }
 
+/* ===== 左侧栏拖拽手柄（独立列） ===== */
+.sidebar-handle-col {
+  cursor: col-resize;
+  z-index: 10;
+  transition: background var(--duration-fast);
+  position: relative;
+}
+
+.sidebar-handle-col::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--border-light);
+  transition: background var(--duration-fast), width var(--duration-fast);
+}
+
+.sidebar-handle-col:hover::after,
+.sidebar-handle-col.active::after {
+  background: var(--pink);
+  width: 2px;
+}
+
 .drag-ghost {
   opacity: .4;
   border: 2px dashed var(--pink);
   border-radius: var(--radius-sm);
-}
-
-/* ===== 左侧栏拖拽手柄 ===== */
-.sidebar-resize-handle {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 5px;
-  height: 100%;
-  cursor: col-resize;
-  z-index: 10;
-  transition: background var(--duration-fast);
-}
-
-.sidebar-resize-handle:hover,
-.sidebar-resize-handle.active {
-  background: var(--pink);
-  opacity: 0.5;
-}
-
-.col-playlist {
-  position: relative;
-  overflow: hidden;
-}
-
-/* 拖拽时允许手柄溢出 */
-body.sidebar-resizing .col-playlist,
-body.sidebar-resizing .col-playlist.col {
-  overflow: visible;
-}
-
-body.sidebar-resizing .col-playlist::after {
-  content: '';
-  position: absolute;
-  right: -2px;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: var(--pink);
-  opacity: 0.3;
-  pointer-events: none;
 }
 
 /* ===== CENTER — PLAYER COLUMN ===== */

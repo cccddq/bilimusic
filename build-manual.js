@@ -1,7 +1,7 @@
 'use strict';
 // ============ BiliMusic 手动构建脚本 ============
 // 不使用 electron-builder (绕开 winCodeSign 7zip 符号链接问题)
-// // // // // // // // // // // // // // // // // // // // 产出: dist/BiliMusic/ 便携目录 + dist/BiliMusic Setup 4.5.exe 安装包
+// // // // // // // // // // // // // // // // // // // // // 产出: dist/BiliMusic/ 便携目录 + dist/BiliMusic Setup 4.6.exe 安装包
 
 const fs = require('fs');
 const path = require('path');

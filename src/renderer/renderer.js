@@ -434,13 +434,16 @@ function scrollPlaylistToItem(index) {
 function initSidebarResize() {
   const handle = document.getElementById('sidebarResizeHandle');
   const sidebar = document.getElementById('sidebar');
-  const grid = document.querySelector('.main-grid');
-  if (!handle || !sidebar || !grid) return;
+  if (!handle || !sidebar) return;
 
   let isDragging = false;
+  let startX = 0;
+  let startWidth = 0;
 
   handle.addEventListener('mousedown', (e) => {
     isDragging = true;
+    startX = e.clientX;
+    startWidth = sidebar.getBoundingClientRect().width;
     handle.classList.add('active');
     document.body.classList.add('sidebar-resizing');
     document.body.style.cursor = 'col-resize';
@@ -450,20 +453,19 @@ function initSidebarResize() {
 
   document.addEventListener('mousemove', (e) => {
     if (!isDragging) return;
-    const newWidth = Math.max(180, Math.min(600, e.clientX - sidebar.getBoundingClientRect().left));
+    const delta = e.clientX - startX;
+    const newWidth = Math.max(180, Math.min(600, startWidth + delta));
     document.documentElement.style.setProperty('--sidebar-width', newWidth + 'px');
-    // 通知主进程重新定位播放器
     relayoutPlayerView();
   });
 
   document.addEventListener('mouseup', () => {
-    if (isDragging) {
-      isDragging = false;
-      handle.classList.remove('active');
-      document.body.classList.remove('sidebar-resizing');
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-    }
+    if (!isDragging) return;
+    isDragging = false;
+    handle.classList.remove('active');
+    document.body.classList.remove('sidebar-resizing');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
   });
 }
 
