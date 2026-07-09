@@ -153,12 +153,52 @@ function addToFavorites(bvid, title, author, duration, cover) {
 
 /** 弹出新建歌单对话框 */
 function showCreatePlaylistDialog() {
-  const name = prompt('请输入新歌单名称:', '');
-  if (name && name.trim()) {
-    createPlaylist(name.trim());
-    // 自动切换到新歌单
-    switchPlaylist(playlistOrder[playlistOrder.length - 1]);
+  const modal = document.getElementById('newPlaylistModal');
+  const input = document.getElementById('newPlaylistInput');
+  if (modal && input) {
+    input.value = '';
+    modal.style.display = 'flex';
+    setTimeout(() => input.focus(), 100);
   }
+}
+
+function closeNewPlaylistModal() {
+  document.getElementById('newPlaylistModal').style.display = 'none';
+}
+
+function confirmNewPlaylist() {
+  const input = document.getElementById('newPlaylistInput');
+  const name = input.value.trim();
+  if (!name) { showToast('请输入歌单名称', 'error'); return; }
+  createPlaylist(name);
+  switchPlaylist(playlistOrder[playlistOrder.length - 1]);
+  closeNewPlaylistModal();
+}
+
+// ============ 歌单字体大小调节 ============
+const FONT_SIZE_KEY = 'bilimusic_playlist_font_size';
+const FONT_SIZE_MIN = 10;
+const FONT_SIZE_MAX = 20;
+const FONT_SIZE_DEFAULT = 12;
+
+function getPlaylistFontSize() {
+  try { return parseInt(localStorage.getItem(FONT_SIZE_KEY)) || FONT_SIZE_DEFAULT; }
+  catch(e) { return FONT_SIZE_DEFAULT; }
+}
+
+function setPlaylistFontSize(size) {
+  const s = Math.max(FONT_SIZE_MIN, Math.min(FONT_SIZE_MAX, size));
+  localStorage.setItem(FONT_SIZE_KEY, String(s));
+  document.documentElement.style.setProperty('--playlist-font-size', s + 'px');
+  document.documentElement.style.setProperty('--playlist-meta-font-size', Math.max(8, s - 2) + 'px');
+}
+
+function increaseFontSize() {
+  setPlaylistFontSize(getPlaylistFontSize() + 1);
+}
+
+function decreaseFontSize() {
+  setPlaylistFontSize(getPlaylistFontSize() - 1);
 }
 
 // ============ INIT ============
@@ -196,8 +236,9 @@ function init() {
   // 初始化导入歌单（加载随机歌名 + 启动定时刷新）
   initImportedSongs();
 
-  // 左侧栏拖拽调整宽度
-  initSidebarResize();
+  // 初始化歌单字体大小
+  const savedSize = getPlaylistFontSize();
+  setPlaylistFontSize(savedSize);
 }
 init();
 
@@ -428,45 +469,6 @@ function scrollPlaylistToItem(index) {
     target.style.background = 'rgba(251,114,153,0.2)';
     setTimeout(() => { target.style.background = ''; }, 1500);
   }
-}
-
-/** 左侧栏拖拽调整宽度 */
-function initSidebarResize() {
-  const handle = document.getElementById('sidebarResizeHandle');
-  const sidebar = document.getElementById('sidebar');
-  if (!handle || !sidebar) return;
-
-  let isDragging = false;
-  let startX = 0;
-  let startWidth = 0;
-
-  handle.addEventListener('mousedown', (e) => {
-    isDragging = true;
-    startX = e.clientX;
-    startWidth = sidebar.getBoundingClientRect().width;
-    handle.classList.add('active');
-    document.body.classList.add('sidebar-resizing');
-    document.body.style.cursor = 'col-resize';
-    document.body.style.userSelect = 'none';
-    e.preventDefault();
-  });
-
-  document.addEventListener('mousemove', (e) => {
-    if (!isDragging) return;
-    const delta = e.clientX - startX;
-    const newWidth = Math.max(180, Math.min(600, startWidth + delta));
-    document.documentElement.style.setProperty('--sidebar-width', newWidth + 'px');
-    relayoutPlayerView();
-  });
-
-  document.addEventListener('mouseup', () => {
-    if (!isDragging) return;
-    isDragging = false;
-    handle.classList.remove('active');
-    document.body.classList.remove('sidebar-resizing');
-    document.body.style.cursor = '';
-    document.body.style.userSelect = '';
-  });
 }
 
 /** 展开/收起多P视频的子集目录 */

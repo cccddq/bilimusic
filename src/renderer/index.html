@@ -22,13 +22,15 @@
   BiliMusic <span>Aurora · 音乐播放器</span>
 </div>
 	  <div class="topbar-actions">
-	    <button onclick="toggleMode()" id="modeBtn" title="播放模式">🔁 列表循环</button>
-	    <button onclick="importPlaylist()">📥 导入</button>
-	    <button onclick="exportPlaylist()">📤 导出</button>
-	    <button onclick="toggleSettings()">⚙️</button>
-	    <button onclick="toggleLogin()" id="loginBtn">🔐 登录</button>
-	  </div>
-	</div>
+		    <button onclick="toggleMode()" id="modeBtn" title="播放模式">🔁 列表循环</button>
+		    <button onclick="decreaseFontSize()" id="fontMinusBtn" title="缩小歌单字体">A⁻</button>
+		    <button onclick="increaseFontSize()" id="fontPlusBtn" title="放大歌单字体">A⁺</button>
+		    <button onclick="importPlaylist()">📥 导入</button>
+		    <button onclick="exportPlaylist()">📤 导出</button>
+		    <button onclick="toggleSettings()">⚙️</button>
+		    <button onclick="toggleLogin()" id="loginBtn">🔐 登录</button>
+		  </div>
+		</div>
 
 <!-- 3-Column Main -->
 <div class="main-grid">
@@ -49,10 +51,7 @@
     </div>
   </div>
 
-  <!-- Resize Handle -->
-  <div class="sidebar-handle-col" id="sidebarResizeHandle"></div>
-
-  <!-- Center: Player (WebContentsView 叠在此区域上) -->
+  <!-- Center: Player -->
   <div class="col col-player" id="playerCol">
     <div class="player-frame-wrap" id="playerFrameWrap">
       <!-- 内嵌播放器是主进程的 WebContentsView，精确覆盖此区域 -->
@@ -171,6 +170,20 @@
 	    </p>
     <div class="btn-row">
       <button class="btn-secondary" onclick="closeSettings()">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- New Playlist Modal -->
+<div class="modal-overlay" id="newPlaylistModal" style="display:none;" onclick="if(event.target===this)closeNewPlaylistModal()">
+  <div class="modal">
+    <h3>📋 新建歌单</h3>
+    <input type="text" id="newPlaylistInput" placeholder="输入歌单名称"
+           style="width:100%;padding:10px 14px;border-radius:10px;background:var(--card);border:1px solid var(--border);color:var(--text);font-size:14px;font-family:inherit;outline:none;transition:all 150ms;"
+           onkeydown="if(event.key==='Enter')confirmNewPlaylist()">
+    <div class="btn-row">
+      <button class="btn-secondary" onclick="closeNewPlaylistModal()">取消</button>
+      <button class="btn-primary" onclick="confirmNewPlaylist()">创建</button>
     </div>
   </div>
 </div>

@@ -162,7 +162,7 @@ body {
 /* ===== MAIN 3-COLUMN LAYOUT ===== */
 .main-grid {
   display: grid;
-  grid-template-columns: var(--sidebar-width, 280px) 5px 1fr 340px;
+  grid-template-columns: 320px 1fr 340px;
   height: calc(100vh - 52px - 72px);
   overflow: hidden;
   flex: 1;
@@ -172,16 +172,18 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-right: 1px solid var(--border);
 }
 
-.col:last-child {
-  border-right: none;
-}
-
-/* ===== LEFT — PLAYLIST ===== */
 .col-playlist {
   background: rgba(15, 15, 35, .35);
+  border-right: 1px solid var(--border);
+  position: relative;
+  min-width: 180px;
+  max-width: 600px;
+}
+
+.col-search {
+  border-left: 1px solid var(--border);
 }
 
 .col-playlist .col-header {
@@ -300,7 +302,7 @@ body {
 }
 
 .pl-item .pl-title {
-  font-size: 11px !important;
+  font-size: var(--playlist-font-size, 12px);
   font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -308,7 +310,7 @@ body {
 }
 
 .pl-item .pl-meta {
-  font-size: 9px !important;
+  font-size: var(--playlist-meta-font-size, 10px);
   color: var(--text-tertiary);
   margin-top: 1px;
 }
@@ -382,14 +384,14 @@ body {
 }
 
 .pl-subitem .pl-title {
-  font-size: 11px;
+  font-size: var(--playlist-font-size, 12px);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .pl-subitem .pl-meta {
-  font-size: 9px;
+  font-size: var(--playlist-meta-font-size, 10px);
   color: var(--text-tertiary);
   margin-top: 1px;
 }
@@ -422,30 +424,15 @@ body {
   line-height: 1.6;
 }
 
-/* ===== 左侧栏拖拽手柄（独立列） ===== */
+/* ===== 左侧栏拖拽手柄 ===== */
 .sidebar-handle-col {
-  cursor: col-resize;
-  z-index: 10;
-  transition: background var(--duration-fast);
+  display: none; /* 不再使用独立列方案 */
+}
+
+/* 使用侧栏右边框作为拖拽区域 */
+.col-playlist {
+  border-right: 1px solid var(--border);
   position: relative;
-}
-
-.sidebar-handle-col::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  top: 0;
-  bottom: 0;
-  width: 1px;
-  background: var(--border-light);
-  transition: background var(--duration-fast), width var(--duration-fast);
-}
-
-.sidebar-handle-col:hover::after,
-.sidebar-handle-col.active::after {
-  background: var(--pink);
-  width: 2px;
 }
 
 .drag-ghost {
