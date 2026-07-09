@@ -195,6 +195,9 @@ function init() {
 
   // 初始化导入歌单（加载随机歌名 + 启动定时刷新）
   initImportedSongs();
+
+  // 左侧栏拖拽调整宽度
+  initSidebarResize();
 }
 init();
 
@@ -378,7 +381,7 @@ function renderPlaylist() {
         <span class="pl-idx">${i + 1}</span>
         <img class="pl-thumb" data-src="${escapeAttr(item.cover || '')}" alt="">
         <div class="pl-info" ondblclick="playByIndex(${i})">
-          <div class="pl-title">${multiIcon ? multiIcon + ' ' : ''}${escapeHtml(item.title || '未知')}</div>
+          <div class="pl-title" title="${escapeAttr(item.title || '未知')}">${multiIcon ? multiIcon + ' ' : ''}${escapeHtml(item.title || '未知')}</div>
           <div class="pl-meta">${escapeHtml(item.author || '')} · ${formatDuration(item.duration || 0)}${hasPages ? ' · ' + item.pages.length + 'P' : ''}</div>
         </div>
         ${hasPages ? `<button class="pl-expand" onclick="event.stopPropagation();togglePlaylistExpand(${i})" title="${isExpanded ? '收起' : '展开'}子集">${isExpanded ? '▲' : '▼'}</button>` : ''}
@@ -392,7 +395,7 @@ function renderPlaylist() {
           <div class="pl-subitem" onclick="playPage(${i}, ${pi})" oncontextmenu="event.stopPropagation();showPlaylistContextMenu(event, ${i})">
             <span class="pl-sidx">${pi + 1}</span>
             <div class="pl-info">
-              <div class="pl-title">${escapeHtml(page.part || '第' + (pi + 1) + '段')}</div>
+              <div class="pl-title" title="${escapeAttr(page.part || '第' + (pi + 1) + '段')}">${escapeHtml(page.part || '第' + (pi + 1) + '段')}</div>
               <div class="pl-meta">${formatDuration(page.duration)}</div>
             </div>
           </div>`;
@@ -425,6 +428,41 @@ function scrollPlaylistToItem(index) {
     target.style.background = 'rgba(251,114,153,0.2)';
     setTimeout(() => { target.style.background = ''; }, 1500);
   }
+}
+
+/** 左侧栏拖拽调整宽度 */
+function initSidebarResize() {
+  const handle = document.getElementById('sidebarResizeHandle');
+  const sidebar = document.getElementById('sidebar');
+  const grid = document.querySelector('.main-grid');
+  if (!handle || !sidebar || !grid) return;
+
+  let isDragging = false;
+
+  handle.addEventListener('mousedown', (e) => {
+    isDragging = true;
+    handle.classList.add('active');
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    const newWidth = Math.max(180, Math.min(600, e.clientX - sidebar.getBoundingClientRect().left));
+    document.documentElement.style.setProperty('--sidebar-width', newWidth + 'px');
+    // 通知主进程重新定位播放器
+    relayoutPlayerView();
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (isDragging) {
+      isDragging = false;
+      handle.classList.remove('active');
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    }
+  });
 }
 
 /** 展开/收起多P视频的子集目录 */
