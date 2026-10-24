@@ -6,7 +6,7 @@
 不弹独立窗口；歌单、搜索、导入导出、扫码登录全部本地完成。
 
 ![version](https://img.shields.io/badge/version-7.6-blue)
-![platform](https://img.shields.io/badge/platform-Windows%20%7C%20Android-blue)
+![platform](https://img.shields.io/badge/platform-Windows-blue)
 ![Electron](https://img.shields.io/badge/Electron-33-green)
 ![License](https://img.shields.io/badge/license-MIT-brightgreen)
 
@@ -49,20 +49,6 @@ node scripts/build-release.js 7.5 --no-installer
 ```
 
 产物：`dist/BiliMusic/`（便携版）、`dist_installer/BiliMusic Setup X.X.exe`（安装包）。
-
-## 📱 安卓平板版
-
-Electron 没有 Android 运行时，所以安卓版是一个**外壳工程**：界面代码（`src/renderer`，含专注视图与
-6 套皮肤）与二维码编码器（`src/qr.js`）原样复用；Electron 主进程那部分能力（HTTP + Cookie 罐 +
-WBI 签名 + 扫码登录 + 歌单存储 + 内嵌播放器）用 Java 重写；"内嵌播放器"改成第二个 WebView 叠在
-界面中间列上——和桌面端 `WebContentsView` 是同一个思路。
-
-```bash
-npm run build:apk        # 出 APK（需要 JDK17 + Android SDK，见 android/README.md）
-npm run test:android     # 安卓侧自检：JS 桥 + 共享界面 + WBI 签名一致性
-```
-
-架构细节、工具链、安装与已知限制见 [android/README.md](android/README.md)。
 
 ## 🎨 界面设计系统
 

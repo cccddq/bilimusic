@@ -30,14 +30,11 @@ npm-debug.log*
 npx
 build.js
 
-# Android 构建产物
-android/.gradle/
-android/build/
-android/app/build/
-android/local.properties
-android/app/src/main/assets/www/
 dist_apk/
 
 # 构建中间产物
 dist_build/
 dist_tmp/
+
+# Android 外壳工程（已暂停维护；源码保留在提交 344ef16，不再随仓库分发）
+android/

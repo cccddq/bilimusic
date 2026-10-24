@@ -1,5 +1,0 @@
-// BiliMusic 安卓版 —— 根构建脚本
-// 只依赖 Android Gradle Plugin, 不引入 AndroidX(全部用系统框架 API)。
-plugins {
-    id 'com.android.application' version '8.5.2' apply false
-}

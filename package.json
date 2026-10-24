@@ -19,8 +19,7 @@
     "test": "npm run check && npm run verify:qr && npm run smoke",
     "smoke:android": "electron scripts/android-test",
     "test:wbi": "node scripts/android-test/wbi-port-test.js",
-    "test:android": "npm run smoke:android && npm run test:wbi",
-    "build:apk": "powershell -NoProfile -ExecutionPolicy Bypass -File android/build-apk.ps1"
+    "test:android": "npm run smoke:android && npm run test:wbi"
   },
   "devDependencies": {
     "electron": "^33.0.0",
