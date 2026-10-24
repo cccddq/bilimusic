@@ -1,7 +1,7 @@
 {
   "name": "bilimusic",
-  "version": "7.1.0",
-  "description": "BiliMusic Aurora v7.1 - 哔哩哔哩音乐播放器 (Electron 桌面版)",
+  "version": "7.8.6",
+  "description": "BiliMusic Aurora v7.8.6 - 哔哩哔哩音乐播放器 (Electron 桌面版)",
   "main": "src/main.js",
   "author": "BiliMusic",
   "license": "MIT",
@@ -10,12 +10,23 @@
     "build": "node scripts/build-release.js",
     "build:minor": "node scripts/build-release.js --minor",
     "build:major": "node scripts/build-release.js --major",
+    "build:portable": "node scripts/build-release.js --no-installer",
     "dist": "electron-builder --win nsis",
-    "dist:portable": "electron-builder --win portable"
+    "dist:portable": "electron-builder --win portable",
+    "check": "node scripts/check.js",
+    "verify:qr": "node scripts/verify-qr.js",
+    "smoke": "electron scripts/smoke",
+    "test": "npm run check && npm run verify:qr && npm run smoke",
+    "smoke:android": "electron scripts/android-test",
+    "test:wbi": "node scripts/android-test/wbi-port-test.js",
+    "test:android": "npm run smoke:android && npm run test:wbi",
+    "build:apk": "powershell -NoProfile -ExecutionPolicy Bypass -File android/build-apk.ps1"
   },
   "devDependencies": {
     "electron": "^33.0.0",
-    "electron-builder": "^25.0.0"
+    "electron-builder": "^25.0.0",
+    "jsqr": "^1.4.0",
+    "qrcode": "^1.5.4"
   },
   "build": {
     "appId": "com.bilimusic.app",
@@ -46,8 +57,5 @@
       "createStartMenuShortcut": true,
       "shortcutName": "BiliMusic"
     }
-  },
-  "dependencies": {
-    "7zip-bin": "^5.2.0"
   }
 }

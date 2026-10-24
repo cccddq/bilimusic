@@ -1,199 +1,305 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BiliMusic Aurora</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BiliMusic</title>
+  <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body data-theme="aurora">
 
-<!-- Top Bar -->
-<div class="topbar">
-  <div class="logo">
-  <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-    <rect x="1" y="1" width="20" height="20" rx="6" fill="url(#logoGrad)"/>
-    <path d="M7 6v10l8-5-8-5z" fill="#fff" opacity=".85"/>
-    <defs><linearGradient id="logoGrad" x1="0" y1="0" x2="22" y2="22"><stop offset="0%" stop-color="#FB7299"/><stop offset="100%" stop-color="#7C5CFC"/></linearGradient></defs>
-  </svg>
-  BiliMusic <span>Aurora · 音乐播放器</span>
-</div>
-	  <div class="topbar-actions">
-		    <button onclick="toggleMode()" id="modeBtn" title="播放模式">🔁 列表循环</button>
-		    <button onclick="decreaseFontSize()" id="fontMinusBtn" title="缩小歌单字体">A⁻</button>
-		    <button onclick="increaseFontSize()" id="fontPlusBtn" title="放大歌单字体">A⁺</button>
-		    <button onclick="importPlaylist()">📥 导入</button>
-		    <button onclick="exportPlaylist()">📤 导出</button>
-		    <button onclick="toggleSettings()">⚙️</button>
-		    <button onclick="toggleLogin()" id="loginBtn">🔐 登录</button>
-		  </div>
-		</div>
-
-<!-- 3-Column Main -->
-<div class="main-grid">
-
-  <!-- Left: Playlist -->
-  <div class="col col-playlist" id="sidebar">
-    <div class="col-header">
-      <div id="playlistSelector" style="position:relative;flex:1;"></div>
-      <span class="count" id="playlistCount" style="font-size:12px;color:var(--text-secondary);margin-right:4px;">(0)</span>
-      <button onclick="showCreatePlaylistDialog()" title="新建歌单">➕</button>
-      <button onclick="clearPlaylist()" title="清空">🗑️</button>
+  <!-- ==================== 顶栏 ==================== -->
+  <header class="topbar">
+    <div class="logo">
+      <span class="logo-mark"><span data-icon="play"></span></span>
+      BiliMusic <span>Aurora · 音乐播放器</span>
     </div>
-    <div class="playlist-scroll" id="playlist" ondragover="handleDragOver(event)" ondrop="handleDrop(event)">
-      <div class="empty-pl" id="emptyPlaylist">
-        <div style="font-size:40px;margin-bottom:8px;">🎶</div>
-        <p>歌单空空如也<br>搜索歌曲点击 <b style="color:var(--pink)">+</b> 添加</p>
-      </div>
+
+    <button class="search-trigger" id="searchTrigger" onclick="openPalette()" title="搜索（Ctrl+K）">
+      <span data-icon="search"></span>
+      <span class="st-text">搜索歌曲、UP 主…</span>
+      <kbd>Ctrl K</kbd>
+    </button>
+
+    <div class="topbar-actions">
+      <button class="tbtn icon-only" id="focusBtn" onclick="togglePlaylistFocus()" title="歌单专注视图（Esc 退出）">
+        <span data-icon="grid"></span>
+      </button>
+      <button class="tbtn icon-only" id="themeBtn" onclick="toggleThemePanel(event)" title="更换皮肤">
+        <span data-icon="palette"></span>
+      </button>
+      <button class="tbtn icon-only" id="moreBtn" onclick="toggleMoreMenu(event)" title="更多操作">
+        <span data-icon="more"></span>
+      </button>
+      <button class="tbtn primary" id="loginBtn" onclick="toggleLogin()" title="登录 B 站">
+        <span data-icon="user"></span><span>登录</span>
+      </button>
     </div>
+  </header>
+
+  <!-- 更多操作菜单 -->
+  <div class="context-menu more-menu" id="moreMenu" style="display:none;">
+    <div class="cm-item" onclick="importPlaylistFile()"><span data-icon="download"></span>导入歌单 txt</div>
+    <div class="cm-item" onclick="exportPlaylist()"><span data-icon="upload"></span>导出全部歌单</div>
+    <div class="cm-sep"></div>
+    <div class="cm-item" id="fontMinusBtn" onclick="decreaseFontSize()"><span data-icon="minus-circle"></span>减小歌单字号</div>
+    <div class="cm-item" id="fontPlusBtn" onclick="increaseFontSize()"><span data-icon="plus-circle"></span>增大歌单字号</div>
+    <div class="cm-sep"></div>
+    <div class="cm-item" onclick="switchPanelTab('queue');hideMoreMenu()"><span data-icon="queue"></span>查看播放队列</div>
+    <div class="cm-item" onclick="hideMoreMenu();syncFavorites()"><span data-icon="heart"></span>同步到 B 站收藏夹</div>
+    <div class="cm-item" onclick="toggleSettings()"><span data-icon="settings"></span>设置与关于</div>
   </div>
 
-  <!-- Center: Player -->
-  <div class="col col-player" id="playerCol">
-    <div class="player-frame-wrap" id="playerFrameWrap">
-      <!-- 内嵌播放器是主进程的 WebContentsView，精确覆盖此区域 -->
-      <!-- 这层 placeholder 仅在未播放时显示欢迎页 -->
-      <div class="player-placeholder" id="playerPlaceholder">
-        <div class="icon">🎧</div>
-        <p style="font-size:15px;">在 B 站发现音乐</p>
-        <p style="font-size:12px;color:var(--text-tertiary);">搜索歌曲，添加到歌单开始播放</p>
-      </div>
-    </div>
-  </div>
+  <!-- 皮肤选择面板(内容由 renderer.js 生成) -->
+  <div class="theme-panel" id="themePanel"></div>
 
-  <!-- Right: Search + Results -->
-  <div class="col col-search" id="searchCol">
-    <div class="search-header">
-      <div class="search-bar-wrap" style="position:relative;">
-        <div class="search-bar-input">
-          <span>🔍</span>
-          <input type="text" id="searchInput" placeholder="搜索B站音乐..."
-                 onkeydown="if(event.key==='Enter') search()" oninput="toggleClearBtn()"
-                 onfocus="showSearchHistory()" onblur="setTimeout(hideSearchHistory,200)">
-          <button class="clear-btn" id="clearBtn" onclick="clearSearch()" style="display:none;">✕</button>
+  <!-- ==================== 工作区 ==================== -->
+  <div class="main-grid">
+
+    <!-- ---------- 左：歌单 ---------- -->
+    <div class="col col-playlist" id="sidebar">
+      <div class="col-header">
+        <div id="playlistSelector"></div>
+        <span class="count" id="playlistCount">(0)</span>
+        <button id="viewModeBtn" onclick="togglePlaylistViewMode()" title="切换卡片 / 列表">
+          <span data-icon="list"></span>
+        </button>
+        <button onclick="showCreatePlaylistDialog()" title="新建歌单">
+          <span data-icon="plus"></span>
+        </button>
+        <button onclick="clearPlaylist()" title="清空当前歌单">
+          <span data-icon="trash"></span>
+        </button>
+      </div>
+
+      <div class="playlist-scroll" id="playlist" ondragover="handleDragOver(event)" ondrop="handleDrop(event)">
+        <div class="empty-pl" id="emptyPlaylist">
+          <div class="empty-ico"><span data-icon="music"></span></div>
+          <p>歌单还是空的<br>搜索歌曲，点 <b>+</b> 加入</p>
         </div>
-        <button class="btn-search" onclick="search()">搜索</button>
-        <div class="search-history" id="searchHistory" style="display:none;"></div>
-      </div>
-      <div class="search-tabs">
-        <span class="st-tab st-active" id="tabHot" onclick="switchSearchTab('hot')">🔥 推荐歌曲</span>
-        <span class="st-tab" id="tabSearch" onclick="switchSearchTab('search')">🔍 搜索结果</span>
       </div>
     </div>
-    <div class="results-scroll" id="resultsArea">
-      <div id="welcomeScreen">
-        <!-- 导入歌单区域（替换原来的搜索区域） -->
-        <div id="importedSection" style="padding:14px 14px 10px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-            <span style="font-size:13px;font-weight:600;color:var(--text-tertiary);">📋 我的歌单</span>
-            <div style="display:flex;gap:4px;">
-              <button onclick="importPlaylistFile()" id="importBtn" style="padding:4px 12px;border-radius:8px;background:var(--card);border:1px solid var(--border);color:var(--text-tertiary);font-size:11px;cursor:pointer;font-family:inherit;transition:all 150ms;display:flex;align-items:center;gap:3px;">📥 导入</button>
-              <button onclick="refreshImportedSongs()" id="refreshImportBtn" title="换一批" style="padding:4px 8px;border-radius:8px;background:var(--card);border:1px solid var(--border);color:var(--text-tertiary);font-size:12px;cursor:pointer;font-family:inherit;transition:all 150ms;">🔄</button>
+
+    <!-- ---------- 中：舞台 ---------- -->
+    <div class="col col-player" id="playerCol">
+      <!-- 原生播放器画面区域(播放时由主进程覆盖) -->
+      <div class="player-frame-wrap" id="playerFrameWrap">
+        <!-- 空闲时的首页: 继续播放 / 最近添加 / 每日推荐 -->
+        <div class="player-placeholder" id="playerPlaceholder">
+          <div class="home" id="homeScreen">
+            <div class="home-hero" id="homeHero"></div>
+            <div id="homeRecent"></div>
+            <div class="home-section" id="hotRecommend">
+              <div class="section-head">
+                <span data-icon="sparkle"></span>
+                <span class="section-title">每日推荐</span>
+                <button class="ghost-btn" onclick="loadHotMusic()" title="换一批">
+                  <span data-icon="refresh"></span>换一批
+                </button>
+              </div>
+              <div id="hotList" class="home-hot"></div>
             </div>
           </div>
-          <div id="importedSongList" style="display:flex;flex-wrap:wrap;gap:5px;min-height:32px;">
-            <span style="font-size:12px;color:var(--text-tertiary);padding:6px 0;">点击 📥 导入按钮，选择你的歌单 txt 文件</span>
-          </div>
-        </div>
-
-        <div id="hotRecommend" style="padding:0 14px 14px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-            <span style="font-size:13px;font-weight:600;color:var(--pink);">🔥 推荐歌曲</span>
-            <button onclick="loadHotMusic()" style="padding:4px 14px;border-radius:10px;background:var(--card);border:1px solid var(--border);color:var(--text-tertiary);font-size:11px;cursor:pointer;font-family:inherit;transition:all 150ms;">🔄 换一批</button>
-          </div>
-          <div id="hotList" style="display:flex;flex-direction:column;gap:4px;"></div>
         </div>
       </div>
     </div>
-  </div>
-</div>
 
-<!-- Bottom Player Bar -->
-<div class="player-bar" id="playerBar">
-  <div class="np-info">
-    <img class="np-thumb" id="npThumb" src="" alt="" style="display:none;">
-    <div class="np-text">
-      <div class="np-title" id="npTitle">未播放</div>
-      <div class="np-author" id="npAuthor"></div>
-    </div>
-  </div>
-  <div class="np-controls">
-    <button onclick="prev()" title="上一首">⏮</button>
-    <button class="btn-play" id="btnPlay" onclick="togglePlay()">▶</button>
-    <button onclick="next()" title="下一首">⏭</button>
-  </div>
-  <div class="np-progress">
-    <span class="np-time" id="npTime">0:00</span>
-    <div class="np-progress-bar" id="progressOuter" onclick="seekProgress(event)">
-      <div class="np-progress-fill" id="progressFill" style="width:0%"></div>
-    </div>
-    <span class="np-time" id="npDuration">0:00</span>
-  </div>
-  <button class="np-mode" onclick="toggleMode()" id="modeLabel">🔁 列表循环</button>
-  <button onclick="togglePlayerFullscreen()" id="fullscreenBtn" title="全屏" style="font-size:12px;cursor:pointer;background:transparent;border:1px solid var(--border);color:var(--text-secondary);padding:2px 8px;border-radius:6px;transition:all 150ms;font-family:inherit;">⛶ 全屏</button>
-  <div class="np-volume">
-    <span>🔊</span>
-    <input type="range" id="volumeSlider" min="0" max="100" value="80" title="音量">
-  </div>
-</div>
+    <!-- ---------- 右：队列 / 搜索结果 ---------- -->
+    <div class="col col-search" id="searchCol">
+      <div class="search-header">
+        <div class="search-bar-wrap">
+          <div class="search-bar-input">
+            <span data-icon="search"></span>
+            <input type="text" id="searchInput" placeholder="搜索 B 站音乐…"
+                   onkeydown="if(event.key==='Enter') search()" oninput="toggleClearBtn()"
+                   onfocus="showSearchHistory()" onblur="setTimeout(hideSearchHistory,200)">
+            <button class="clear-btn" id="clearBtn" onclick="clearSearch()" style="display:none;">
+              <span data-icon="x"></span>
+            </button>
+          </div>
+          <button class="btn-search" onclick="search()">搜索</button>
+          <button class="imported-toggle icon-only" id="importToggleBtn" onclick="switchPanelTab('imported')"
+                  title="导入歌单：随机显示歌名，点一首直接搜">
+            <span data-icon="download"></span>
+          </button>
+          <div class="search-history" id="searchHistory" style="display:none;"></div>
+        </div>
 
-<!-- Toast -->
-<div class="toast-container" id="toastContainer"></div>
+        <div class="panel-bar">
+          <div class="search-tabs">
+            <span class="st-tab st-active" id="tabQueue" onclick="switchPanelTab('queue')">
+              <span data-icon="queue"></span>队列
+            </span>
+            <span class="st-tab" id="tabSearch" onclick="switchPanelTab('search')">
+              <span data-icon="search"></span>搜索结果
+            </span>
+          </div>
+        </div>
+      </div>
 
-<!-- Login Modal -->
-<div class="modal-overlay" id="loginModal" style="display:none;" onclick="if(event.target===this)closeLogin()">
-  <div class="modal">
-    <h3>🔐 登录B站</h3>
-    <div style="text-align:center;padding:16px 0;">
-      <p style="color:var(--text-secondary);margin-bottom:16px;">使用Bilibili App扫描二维码登录</p>
-      <img id="loginQrImg" src="" style="width:200px;height:200px;border-radius:8px;background:#fff;display:none;">
-      <div id="loginQrPlaceholder" style="width:200px;height:200px;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;color:#999;margin:0 auto;">加载中...</div>
-      <p id="loginStatus" style="font-size:13px;margin-top:12px;color:var(--text-secondary);"></p>
-      <div id="loginActions" style="display:none;margin-top:12px;">
-        <button onclick="refreshQRCode()" class="btn-primary" style="display:inline-flex;align-items:center;gap:6px;padding:8px 22px;border-radius:12px;cursor:pointer;font-size:13px;font-weight:600;border:none;font-family:inherit;background:linear-gradient(135deg,var(--pink),var(--purple));color:#fff;transition:var(--duration-fast);">🔄 刷新</button>
-        <button onclick="closeLogin()" class="btn-secondary" style="padding:8px 22px;border-radius:12px;cursor:pointer;font-size:13px;font-weight:600;border:1px solid var(--border);font-family:inherit;background:var(--card);color:var(--text);transition:var(--duration-fast);">取消</button>
+      <div class="results-scroll" id="resultsArea">
+        <!-- 队列 -->
+        <div id="queuePane">
+          <div class="queue-now" id="queueNow"></div>
+          <div class="queue-list" id="queueList"></div>
+        </div>
+        <!-- 搜索结果 -->
+        <div id="searchPane" style="display:none;">
+          <div id="searchResultsContainer"></div>
+        </div>
+        <!-- 导入歌名(隐藏承载, 由 renderer 填充, 供首页/测试使用) -->
+        <!-- 推荐列表已移到首页; 这里保留空壳供旧代码引用 -->
+        <div id="welcomeScreen" style="display:none;"></div>
       </div>
     </div>
   </div>
-</div>
 
-<!-- Settings Modal -->
-<div class="modal-overlay" id="settingsModal" style="display:none;" onclick="if(event.target===this)closeSettings()">
-  <div class="modal">
-	    <h3>⚙️ 关于 BiliMusic Aurora</h3>
-	    <p style="color:var(--text-secondary);font-size:13px;line-height:1.8;">
-	      BiliMusic Aurora — 视觉重设计版本<br>
-	      内嵌 B 站官方播放器 · 多歌单管理<br>
-	      Electron 桌面版 · 登录持久化保存
-	    </p>
-    <div class="btn-row">
-      <button class="btn-secondary" onclick="closeSettings()">关闭</button>
+  <!-- ==================== 播放条 ==================== -->
+  <footer class="player-bar" id="playerBar">
+    <div class="np-info">
+      <img class="np-thumb" id="npThumb" src="" alt="" style="display:none;">
+      <div class="np-text">
+        <div class="np-title" id="npTitle">未播放</div>
+        <div class="np-author" id="npAuthor"></div>
+      </div>
+    </div>
+
+    <div class="np-controls">
+      <button onclick="prev()" title="上一首"><span data-icon="prev"></span></button>
+      <button class="btn-play" id="btnPlay" onclick="togglePlay()" title="播放 / 暂停">
+        <span data-icon="play"></span>
+      </button>
+      <button onclick="next()" title="下一首"><span data-icon="next"></span></button>
+    </div>
+
+    <div class="np-progress">
+      <span class="np-time num" id="npTime">0:00</span>
+      <div class="np-progress-bar" id="progressOuter" onclick="seekProgress(event)">
+        <div class="np-progress-fill" id="progressFill" style="width:0%"></div>
+      </div>
+      <span class="np-time num" id="npDuration">0:00</span>
+    </div>
+
+    <button class="np-mode" onclick="toggleMode()" id="modeLabel" title="切换播放模式">列表循环</button>
+
+    <div class="np-volume">
+      <span data-icon="volume"></span>
+      <input type="range" id="volumeSlider" min="0" max="100" value="80" title="音量">
+    </div>
+
+    <button class="tbtn icon-only" onclick="switchPanelTab('queue')" title="播放队列">
+      <span data-icon="queue"></span>
+    </button>
+    <button class="tbtn icon-only" onclick="togglePlayerFullscreen()" id="fullscreenBtn" title="全屏">
+      <span data-icon="maximize"></span>
+    </button>
+  </footer>
+
+  <!-- Toast -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- ==================== 命令面板 (Ctrl+K) ==================== -->
+  <div class="palette" id="palette" style="display:none;" onclick="if(event.target===this)closePalette()">
+    <div class="palette-box">
+      <div class="palette-input">
+        <span data-icon="search"></span>
+        <input type="text" id="paletteInput" placeholder="搜索歌曲，或输入命令…"
+               autocomplete="off" spellcheck="false"
+               oninput="paletteOnInput()" onkeydown="paletteOnKey(event)">
+        <kbd>Esc</kbd>
+      </div>
+      <div class="palette-list" id="paletteList"></div>
+      <div class="palette-foot">
+        <span><kbd>↑</kbd><kbd>↓</kbd> 选择</span>
+        <span><kbd>Enter</kbd> 执行</span>
+        <span><kbd>Esc</kbd> 关闭</span>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- New Playlist Modal -->
-<div class="modal-overlay" id="newPlaylistModal" style="display:none;" onclick="if(event.target===this)closeNewPlaylistModal()">
-  <div class="modal">
-    <h3>📋 新建歌单</h3>
-    <input type="text" id="newPlaylistInput" placeholder="输入歌单名称"
-           style="width:100%;padding:10px 14px;border-radius:10px;background:var(--card);border:1px solid var(--border);color:var(--text);font-size:14px;font-family:inherit;outline:none;transition:all 150ms;"
-           onkeydown="if(event.key==='Enter')confirmNewPlaylist()">
-    <div class="btn-row">
-      <button class="btn-secondary" onclick="closeNewPlaylistModal()">取消</button>
-      <button class="btn-primary" onclick="confirmNewPlaylist()">创建</button>
+  <!-- ==================== 弹窗 ==================== -->
+  <!-- 登录 -->
+  <div class="modal-overlay" id="loginModal" style="display:none;" onclick="if(event.target===this)closeLogin()">
+    <div class="modal">
+      <h3><span data-icon="user"></span>登录 B 站</h3>
+      <p class="modal-sub" style="text-align:center;">用 Bilibili App 扫描二维码登录</p>
+      <img id="loginQrImg" src="" alt="登录二维码">
+      <div id="loginQrPlaceholder">加载中…</div>
+      <p id="loginStatus"></p>
+      <div id="loginActions">
+        <button class="btn-primary" onclick="refreshQRCode()">
+          <span data-icon="refresh"></span>刷新
+        </button>
+        <button class="btn-secondary" onclick="closeLogin()">取消</button>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- Right-click Context Menu -->
-<div class="context-menu" id="contextMenu" style="display:none;">
-  <div class="cm-item" id="contextFav" onclick="contextAddToFavorites()">❤️ 添加到「我喜欢的」</div>
-</div>
+  <!-- 设置 / 关于 -->
+  <div class="modal-overlay" id="settingsModal" style="display:none;" onclick="if(event.target===this)closeSettings()">
+    <div class="modal">
+      <h3><span data-icon="settings"></span>关于 BiliMusic</h3>
+      <p style="line-height:1.9;">
+        BiliMusic Aurora — 视觉重设计版<br>
+        内嵌 B 站官方播放器 · 多歌单管理<br>
+        <span id="aboutVersion">版本读取中…</span> · Electron 桌面版 · 登录持久化保存
+      </p>
+      <p style="margin-top:10px;">
+        <span id="aboutDataDir" style="color:var(--fg-3);font-size:11px;word-break:break-all;"></span>
+      </p>
+      <div class="btn-row">
+        <button class="btn-secondary" onclick="closeSettings()">关闭</button>
+      </div>
+    </div>
+  </div>
 
-<script src="renderer.js"></script>
+  <!-- 新建歌单 -->
+  <div class="modal-overlay" id="newPlaylistModal" style="display:none;" onclick="if(event.target===this)closeNewPlaylistModal()">
+    <div class="modal">
+      <h3><span data-icon="folder"></span>新建歌单</h3>
+      <input type="text" id="newPlaylistInput" placeholder="输入歌单名称"
+             onkeydown="if(event.key==='Enter')confirmNewPlaylist()">
+      <div class="btn-row">
+        <button class="btn-secondary" onclick="closeNewPlaylistModal()">取消</button>
+        <button class="btn-primary" onclick="confirmNewPlaylist()">创建</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 收藏夹同步: 选择母本 -->
+  <div class="modal-overlay" id="favSyncModal" style="display:none;" onclick="if(event.target===this)closeFavSyncModal()">
+    <div class="modal" style="max-width:540px;">
+      <h3><span data-icon="heart"></span>同步收藏夹</h3>
+      <p id="favSyncSummary" style="margin-bottom:16px;"></p>
+      <div class="fav-choice">
+        <button class="fav-choice-btn" onclick="runFavSync('local')">
+          <span class="fc-title">以软件歌单为母本</span>
+          <span class="fc-desc" id="fcLocalDesc">…</span>
+        </button>
+        <button class="fav-choice-btn" onclick="runFavSync('remote')">
+          <span class="fc-title">以 B 站收藏夹为母本</span>
+          <span class="fc-desc" id="fcRemoteDesc">…</span>
+        </button>
+      </div>
+      <div class="btn-row">
+        <button class="btn-secondary" onclick="closeFavSyncModal()">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 右键菜单 -->
+  <div class="context-menu" id="contextMenu" style="display:none;">
+    <div class="cm-item" id="contextFav" onclick="contextAddToFavorites()">
+      <span data-icon="heart"></span>添加到「我喜欢的」
+    </div>
+    <div class="cm-item" id="contextQueue" onclick="contextAddToQueue()">
+      <span data-icon="queue"></span>添加到播放队列
+    </div>
+  </div>
+
+  <!-- 图标系统 / 安卓桥(桌面端加载时直接返回) -->
+  <script src="icons.js"></script>
+  <script src="bili-bridge.js"></script>
+  <script src="renderer.js"></script>
 </body>
 </html>

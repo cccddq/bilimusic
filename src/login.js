@@ -222,6 +222,8 @@ function logout() {
 
 module.exports = {
   loadCookies,
+  // 启动时把已保存的 cookie 同步进 Electron session(否则重启后内嵌播放器是未登录)
+  syncCookiesToElectronSession,
   generateQRCode,
   pollLogin,
   isLoggedIn,

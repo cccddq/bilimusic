@@ -29,3 +29,15 @@ npm-debug.log*
 .env.local
 npx
 build.js
+
+# Android 构建产物
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/app/src/main/assets/www/
+dist_apk/
+
+# 构建中间产物
+dist_build/
+dist_tmp/
