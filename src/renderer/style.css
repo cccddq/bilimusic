@@ -96,9 +96,9 @@
 
   /* 布局尺寸 */
   --topbar-h: 56px;
+  --drawer-w: 340px;
   --playbar-h: 80px;
   --sidebar-w: 284px;
-  --panel-w: 320px;
 
   /* ---------- 兼容旧变量名（renderer.js 里还有内联样式在用） ---------- */
   --pink: var(--accent);
@@ -339,7 +339,7 @@ img { display: block; max-width: 100%; }
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: var(--sidebar-w) minmax(0, 1fr) var(--panel-w);
+  grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
   background: var(--s0);
 }
 
@@ -1639,7 +1639,6 @@ body.playlist-focus .main-grid {
 }
 
 body.playlist-focus .col-player,
-body.playlist-focus .col-search,
 body.playlist-focus .player-bar {
   display: none !important;
 }
@@ -1685,20 +1684,20 @@ body.playlist-focus .col-header > #playlistSelector { max-width: 300px; }
 }
 
 @media (max-width: 1240px) {
-  :root { --sidebar-w: 256px; --panel-w: 292px; }
+  :root { --sidebar-w: 256px; }
   .np-info { width: 190px; }
   .np-volume { width: 96px; }
 }
 
 @media (max-width: 1080px) {
-  :root { --sidebar-w: 230px; --panel-w: 268px; }
+  :root { --sidebar-w: 230px; }
   .logo span { display: none; }
   .np-info { width: 168px; }
   .np-time { width: 32px; }
 }
 
 @media (max-width: 940px) {
-  :root { --sidebar-w: 210px; --panel-w: 252px; --topbar-h: 52px; }
+  :root { --sidebar-w: 210px; --topbar-h: 52px; }
   .topbar { gap: var(--sp-2); }
   .np-volume { display: none; }
   .np-mode span { display: none; }
@@ -1979,110 +1978,6 @@ kbd {
 }
 .queue-empty { padding: 28px var(--sp-3); text-align: center; color: var(--fg-3); font-size: var(--fs-sm); line-height: 1.8; }
 
-/* ---- 命令面板 ---- */
-.palette {
-  position: fixed;
-  inset: 0;
-  z-index: 960;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  padding-top: 11vh;
-  background: rgba(0, 0, 0, .46);
-  backdrop-filter: blur(5px);
-  animation: fadeIn var(--t-fast) var(--ease);
-}
-
-.palette-box {
-  width: 580px;
-  max-width: calc(100vw - 40px);
-  border-radius: var(--r-lg);
-  background: var(--s1);
-  border: 1px solid var(--line-2);
-  box-shadow: var(--e3);
-  overflow: hidden;
-  animation: popIn var(--t) var(--ease-spring);
-}
-
-.palette-input {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  height: 54px;
-  padding: 0 var(--sp-4);
-  border-bottom: 1px solid var(--line);
-  color: var(--fg-3);
-}
-.palette-input .ic { width: 18px; height: 18px; }
-.palette-input input {
-  flex: 1;
-  min-width: 0;
-  background: none;
-  border: none;
-  color: var(--fg);
-  font-size: var(--fs-lg);
-}
-.palette-input input::placeholder { color: var(--fg-3); }
-
-.palette-list { max-height: 48vh; overflow-y: auto; padding: 6px; }
-
-.palette-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
-  border-radius: var(--r-sm);
-  cursor: pointer;
-}
-.palette-item.active { background: var(--accent-ghost); }
-.palette-item .pi-body { flex: 1; min-width: 0; }
-.palette-item .pi-title {
-  font-size: var(--fs-base);
-  color: var(--fg);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.palette-item.active .pi-title { color: var(--accent); }
-.palette-item .pi-meta {
-  font-size: var(--fs-micro);
-  color: var(--fg-3);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.palette-item .pi-cmd {
-  width: 26px;
-  height: 26px;
-  display: grid;
-  place-items: center;
-  border-radius: 7px;
-  background: var(--s2);
-  color: var(--fg-2);
-  flex-shrink: 0;
-}
-.palette-item .pi-cmd .ic { width: 14px; height: 14px; }
-.palette-item .pi-enter { font-size: 10px; color: var(--fg-3); flex-shrink: 0; }
-
-.palette-empty { padding: 26px; text-align: center; color: var(--fg-3); font-size: var(--fs-sm); line-height: 1.8; }
-.palette-loading { padding: 18px 14px; }
-.palette-group-title {
-  padding: 6px 10px 4px;
-  font-size: 10px;
-  letter-spacing: .6px;
-  text-transform: uppercase;
-  color: var(--fg-3);
-}
-
-.palette-foot {
-  display: flex;
-  gap: var(--sp-4);
-  padding: 8px var(--sp-4);
-  border-top: 1px solid var(--line);
-  font-size: var(--fs-micro);
-  color: var(--fg-3);
-}
-.palette-foot kbd { margin-right: 3px; }
 
 /* 窄屏下顶栏搜索入口只留图标 */
 @media (max-width: 1080px) {
@@ -2309,3 +2204,299 @@ kbd {
 .fav-choice-btn:hover { background: var(--s3); border-color: var(--accent-line); transform: translateY(-1px); }
 .fav-choice-btn .fc-title { font-size: 14px; font-weight: 600; color: var(--fg); }
 .fav-choice-btn .fc-desc { font-size: 12px; color: var(--fg-3); line-height: 1.5; }
+
+/* ===================================================================
+   16. 右侧抽屉: 搜索 / 队列 / 搜索结果
+   -------------------------------------------------------------------
+   右栏不再常驻, 改为按需滑出。注意: 中间播放器是主进程的原生视图
+   (WebContentsView), 永远盖在网页之上, 所以抽屉打开时必须让
+   .col-player 让出宽度, 原生视图才会同步缩窄 —— 否则抽屉会被播放器挡住。
+   =================================================================== */
+.drawer-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 640;
+  display: none;
+  background: transparent;   /* 不压黑界面: 只做点击关闭的捕获层 */
+}
+body.drawer-open .drawer-mask { display: block; }
+
+.drawer {
+  position: fixed;
+  top: var(--topbar-h);
+  right: 0;
+  bottom: var(--playbar-h);
+  width: var(--drawer-w, 340px);
+  z-index: 650;
+  display: flex;
+  flex-direction: column;
+  background: var(--s1);
+  border-left: 1px solid var(--line-2);
+  box-shadow: -18px 0 48px rgba(0, 0, 0, .42);
+  transform: translateX(102%);
+  visibility: hidden;
+  transition: transform var(--t) var(--ease), visibility var(--t);
+}
+body.drawer-open .drawer { transform: translateX(0); visibility: visible; }
+
+/* 专注视图里没有播放条, 抽屉贴到底 */
+body.playlist-focus .drawer { bottom: 0; }
+
+.drawer .col-search {
+  flex: 1;
+  min-height: 0;
+  border-left: none;
+}
+
+/* 抽屉打开 → 播放器列让出宽度(原生视图据 #playerFrameWrap 收缩) */
+body.drawer-open:not(.playlist-focus) .col-player {
+  padding-right: calc(var(--sp-3) + var(--drawer-w, 340px));
+}
+
+/* 专注视图 → 卡片网格让位 */
+body.playlist-focus.drawer-open .col-header,
+body.playlist-focus.drawer-open .playlist-scroll {
+  padding-right: calc(var(--sp-6) + var(--drawer-w, 340px));
+}
+
+/* 顶栏队列按钮的激活态 */
+#queueBtn.is-active { background: var(--accent-ghost); color: var(--accent); }
+
+@media (max-width: 1080px) {
+  .drawer { width: 300px; }
+  body.drawer-open:not(.playlist-focus) .col-player { padding-right: calc(var(--sp-3) + 300px); }
+  body.playlist-focus.drawer-open .col-header,
+  body.playlist-focus.drawer-open .playlist-scroll { padding-right: calc(var(--sp-6) + 300px); }
+}
+
+/* 窄屏: 歌单名不允许竖排(超长省略); 数量徽标让位 */
+.ps-current { min-width: 0; }
+.ps-current .ps-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 1080px) {
+  .col-header .count { display: none; }
+}
+
+/* 收起画面按钮: 收起后高亮; 专注视图里没有画面, 按钮隐藏 */
+#collapseBtn.is-active { background: var(--accent-ghost); color: var(--accent); }
+body.playlist-focus #collapseBtn { display: none; }
+
+/* ===================================================================
+   17. 首页重做: 正在播放卡 + 多源榜单墙
+   =================================================================== */
+.home { max-width: 1120px; text-align: left; }
+
+/* ---- 正在播放卡 ---- */
+.np-card {
+  max-width: 560px;   /* 卡片, 不拉满整行 */
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: var(--sp-4);
+  border-radius: var(--r-lg);
+  background: linear-gradient(135deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+  border: 1px solid rgba(255,255,255,.09);
+}
+.np-card-cover {
+  width: 84px;
+  height: 84px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.35);
+}
+.np-card-cover img { width: 100%; height: 100%; object-fit: cover; }
+.np-card-body { flex: 1; min-width: 0; }
+.np-card-kicker {
+  font-size: var(--fs-micro);
+  letter-spacing: .6px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 2px;
+}
+.np-card-title {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.np-card-sub {
+  margin-top: 1px;
+  font-size: var(--fs-sm);
+  color: rgba(255,255,255,.5);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.np-card-bar {
+  margin-top: 10px;
+  height: 4px;
+  border-radius: var(--r-pill);
+  background: rgba(255,255,255,.12);
+  overflow: hidden;
+}
+.np-card-bar i { display: block; height: 100%; background: var(--accent); border-radius: inherit; }
+.np-card-time {
+  margin-top: 5px;
+  font-size: 10px;
+  color: rgba(255,255,255,.42);
+  font-variant-numeric: tabular-nums;
+}
+.np-card-actions { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
+.np-card-actions .btn-accent, .np-card-actions .btn-ghost-light { height: 30px; font-size: var(--fs-sm); }
+.np-card.idle { justify-content: flex-start; }
+
+/* ---- 榜单墙 ---- */
+.home-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-2);
+}
+.home-toolbar .section-title { flex: 0 0 auto; }
+.home-toolbar-hint {
+  font-size: var(--fs-micro);
+  color: rgba(255,255,255,.35);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.home-toolbar .ghost-btn { margin-left: auto; }
+
+.chart-wall {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sp-3);
+  align-items: start;
+}
+
+.chart-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 320px;
+  border-radius: var(--r);
+  background: rgba(255,255,255,.045);
+  border: 1px solid rgba(255,255,255,.08);
+  overflow: hidden;
+}
+.chart-card-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid rgba(255,255,255,.07);
+}
+.chart-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.chart-source { font-size: var(--fs-sm); font-weight: 600; color: #fff; }
+.chart-tabs { display: flex; gap: 3px; margin-left: auto; overflow: hidden; }
+.chart-tab {
+  height: 20px;
+  padding: 0 7px;
+  border-radius: var(--r-pill);
+  font-size: 10px;
+  color: rgba(255,255,255,.45);
+  white-space: nowrap;
+  transition: all var(--t-fast);
+}
+.chart-tab:hover { background: rgba(255,255,255,.1); color: #fff; }
+.chart-tab.active { background: rgba(255,255,255,.14); color: #fff; }
+
+.chart-list { flex: 1; padding: 4px; }
+
+.chart-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 8px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background var(--t-fast);
+}
+.chart-row:hover { background: rgba(255,255,255,.08); }
+.chart-rank {
+  width: 16px;
+  flex-shrink: 0;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255,255,255,.32);
+  font-variant-numeric: tabular-nums;
+}
+.chart-rank.top { color: var(--accent); }
+.chart-name {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-sm);
+  color: rgba(255,255,255,.88);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chart-artist {
+  flex-shrink: 0;
+  max-width: 35%;
+  font-size: 10px;
+  color: rgba(255,255,255,.4);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chart-go { display: none; color: var(--accent); flex-shrink: 0; }
+.chart-row:hover .chart-go { display: inline-flex; }
+.chart-go .ic { width: 12px; height: 12px; }
+
+.chart-foot {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px 8px;
+  border-top: 1px solid rgba(255,255,255,.06);
+}
+.chart-page {
+  flex: 1;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border-radius: 6px;
+  font-size: 10px;
+  color: rgba(255,255,255,.5);
+  transition: all var(--t-fast);
+}
+.chart-page:hover:not(:disabled) { background: rgba(255,255,255,.1); color: #fff; }
+.chart-page:disabled { opacity: .3; cursor: default; }
+.chart-page .ic { width: 11px; height: 11px; }
+.chart-pageno {
+  flex: 0 0 auto;
+  font-size: 10px;
+  color: rgba(255,255,255,.35);
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-error {
+  padding: 20px 12px;
+  text-align: center;
+  font-size: var(--fs-sm);
+  color: rgba(255,255,255,.45);
+  line-height: 1.7;
+}
+.chart-skeleton { padding: 6px; display: flex; flex-direction: column; gap: 6px; }
+
+@media (max-width: 1180px) {
+  .chart-wall { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 820px) {
+  .chart-wall { grid-template-columns: 1fr; }
+}

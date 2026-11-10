@@ -15,13 +15,15 @@
       BiliMusic <span>Aurora · 音乐播放器</span>
     </div>
 
-    <button class="search-trigger" id="searchTrigger" onclick="openPalette()" title="搜索（Ctrl+K）">
+    <button class="search-trigger" id="searchTrigger" onclick="openDrawer('search', true)" title="搜索歌曲、UP 主">
       <span data-icon="search"></span>
       <span class="st-text">搜索歌曲、UP 主…</span>
-      <kbd>Ctrl K</kbd>
     </button>
 
     <div class="topbar-actions">
+      <button class="tbtn icon-only" id="queueBtn" onclick="toggleDrawer('queue')" title="播放队列">
+        <span data-icon="queue"></span>
+      </button>
       <button class="tbtn icon-only" id="focusBtn" onclick="togglePlaylistFocus()" title="歌单专注视图（Esc 退出）">
         <span data-icon="grid"></span>
       </button>
@@ -45,7 +47,7 @@
     <div class="cm-item" id="fontMinusBtn" onclick="decreaseFontSize()"><span data-icon="minus-circle"></span>减小歌单字号</div>
     <div class="cm-item" id="fontPlusBtn" onclick="increaseFontSize()"><span data-icon="plus-circle"></span>增大歌单字号</div>
     <div class="cm-sep"></div>
-    <div class="cm-item" onclick="switchPanelTab('queue');hideMoreMenu()"><span data-icon="queue"></span>查看播放队列</div>
+    <div class="cm-item" onclick="closeDrawer();toggleDrawer('queue');hideMoreMenu()"><span data-icon="queue"></span>查看播放队列</div>
     <div class="cm-item" onclick="hideMoreMenu();syncFavorites()"><span data-icon="heart"></span>同步到 B 站收藏夹</div>
     <div class="cm-item" onclick="toggleSettings()"><span data-icon="settings"></span>设置与关于</div>
   </div>
@@ -87,23 +89,28 @@
         <!-- 空闲时的首页: 继续播放 / 最近添加 / 每日推荐 -->
         <div class="player-placeholder" id="playerPlaceholder">
           <div class="home" id="homeScreen">
-            <div class="home-hero" id="homeHero"></div>
-            <div id="homeRecent"></div>
-            <div class="home-section" id="hotRecommend">
-              <div class="section-head">
-                <span data-icon="sparkle"></span>
-                <span class="section-title">每日推荐</span>
-                <button class="ghost-btn" onclick="loadHotMusic()" title="换一批">
-                  <span data-icon="refresh"></span>换一批
-                </button>
-              </div>
-              <div id="hotList" class="home-hot"></div>
+            <!-- 正在播放: 紧凑卡片(不再是长条) -->
+            <div class="np-card" id="homeHero"></div>
+
+            <!-- 各音乐站榜单: 每源一张卡, 卡内切榜 + 翻页 -->
+            <div class="home-toolbar">
+              <span class="section-title">推荐榜单</span>
+              <span class="home-toolbar-hint">只取歌名，点一首去 B 站搜</span>
+              <button class="ghost-btn" onclick="refreshCharts(true)" title="三家各切到下一个榜">
+                <span data-icon="refresh"></span>换一换
+              </button>
             </div>
+            <div class="chart-wall" id="chartWall"></div>
           </div>
         </div>
       </div>
     </div>
 
+  </div>
+
+  <!-- ==================== 右侧抽屉: 搜索 / 队列 / 搜索结果 ==================== -->
+  <div class="drawer-mask" id="drawerMask" onclick="closeDrawer()"></div>
+  <aside class="drawer" id="drawer" aria-hidden="true">
     <!-- ---------- 右：队列 / 搜索结果 ---------- -->
     <div class="col col-search" id="searchCol">
       <div class="search-header">
@@ -152,7 +159,7 @@
         <div id="welcomeScreen" style="display:none;"></div>
       </div>
     </div>
-  </div>
+  </aside>
 
   <!-- ==================== 播放条 ==================== -->
   <footer class="player-bar" id="playerBar">
@@ -187,8 +194,11 @@
       <input type="range" id="volumeSlider" min="0" max="100" value="80" title="音量">
     </div>
 
-    <button class="tbtn icon-only" onclick="switchPanelTab('queue')" title="播放队列">
+    <button class="tbtn icon-only" onclick="toggleDrawer('queue')" title="播放队列">
       <span data-icon="queue"></span>
+    </button>
+    <button class="tbtn icon-only" id="collapseBtn" onclick="togglePlayerCollapsed()" title="收起画面（音乐继续）">
+      <span data-icon="collapse"></span>
     </button>
     <button class="tbtn icon-only" onclick="togglePlayerFullscreen()" id="fullscreenBtn" title="全屏">
       <span data-icon="maximize"></span>
@@ -197,25 +207,6 @@
 
   <!-- Toast -->
   <div class="toast-container" id="toastContainer"></div>
-
-  <!-- ==================== 命令面板 (Ctrl+K) ==================== -->
-  <div class="palette" id="palette" style="display:none;" onclick="if(event.target===this)closePalette()">
-    <div class="palette-box">
-      <div class="palette-input">
-        <span data-icon="search"></span>
-        <input type="text" id="paletteInput" placeholder="搜索歌曲，或输入命令…"
-               autocomplete="off" spellcheck="false"
-               oninput="paletteOnInput()" onkeydown="paletteOnKey(event)">
-        <kbd>Esc</kbd>
-      </div>
-      <div class="palette-list" id="paletteList"></div>
-      <div class="palette-foot">
-        <span><kbd>↑</kbd><kbd>↓</kbd> 选择</span>
-        <span><kbd>Enter</kbd> 执行</span>
-        <span><kbd>Esc</kbd> 关闭</span>
-      </div>
-    </div>
-  </div>
 
   <!-- ==================== 弹窗 ==================== -->
   <!-- 登录 -->

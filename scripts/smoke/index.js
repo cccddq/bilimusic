@@ -129,13 +129,29 @@ async function run() {
     if (info.value.userData !== USER_DATA) fail('userData 与预期不一致', info.value.userData);
   } else fail('app:info 失败', JSON.stringify(info).slice(0, 200));
 
+  // 5.1 未播放时原生播放器视图必须是 0×0, 否则它会盖住首页导致点不动
+  const bounds = info.ok && info.value && info.value.ok ? info.value.playerBounds : null;
+  if (bounds && bounds.width === 0 && bounds.height === 0 && info.value.playerVisible === false) {
+    pass('未播放时播放器视图不占位(首页可点击)');
+  } else {
+    fail('播放器视图在未播放时铺开了, 会挡住首页点击', JSON.stringify(bounds));
+  }
+
   // 6. 导入歌单落盘(以前主进程读 txt, 现在渲染进程解码后回传)
   const imp = await rendererEval('window.bili.importSongs(["冒烟测试歌曲A","冒烟测试歌曲B"])');
   if (imp.ok && imp.value && imp.value.ok && imp.value.added === 2) pass('导入歌单落盘', `total=${imp.value.total}`);
   else fail('导入歌单失败', JSON.stringify(imp).slice(0, 200));
+
   const rnd = await rendererEval('window.bili.getRandomSongs(2)');
   if (rnd.ok && rnd.value && rnd.value.ok && rnd.value.songs.length === 2) pass('随机歌名读取');
   else fail('随机歌名读取失败', JSON.stringify(rnd).slice(0, 200));
+
+  // 6.1 随机歌名一次取 10 首(再导入 10 首后验证)
+  await rendererEval('window.bili.importSongs(["压测01","压测02","压测03","压测04","压测05","压测06","压测07","压测08","压测09","压测10"])');
+  const rnd10 = await rendererEval('window.bili.getRandomSongs(10)');
+  const rc = rnd10.ok ? rnd10.value : null;
+  if (rc && rc.ok && rc.songs.length === 10) pass('随机取 10 首', '库中共 ' + rc.total + ' 首');
+  else fail('随机取 10 首异常', JSON.stringify(rc).slice(0, 200));
 
   // 7. 播放器通道(以前 player:getVolume / player:reload 没有实现)
   const vol = await rendererEval('window.bili.playerGetVolume()');
@@ -182,7 +198,7 @@ async function run() {
     return {
       focused: document.body.classList.contains('playlist-focus'),
       viewMode: _playlistViewMode,
-      searchHidden: getComputedStyle(document.querySelector('.col-search')).display === 'none',
+      searchHidden: getComputedStyle(document.querySelector('.drawer')).visibility === 'hidden',
       playerColHidden: getComputedStyle(document.querySelector('.col-player')).display === 'none',
       barHidden: getComputedStyle(document.querySelector('.player-bar')).display === 'none',
       playerWidth: Math.round(document.getElementById('playerFrameWrap').getBoundingClientRect().width),
@@ -226,48 +242,80 @@ async function run() {
   const shotNormal = await captureShot('shot-normal.png');
   if (shotNormal > 30000) pass('截图: 普通视图', shotNormal + ' 字节');
 
-  // 9.5 新结构: 播放队列 / 首页 / 命令面板
-  const queueCheck = await rendererEval(`(function(){
-    switchPanelTab('queue');
+  // 9.5 新结构: 右侧抽屉(队列/搜索结果) / 首页
+  await rendererEval("(function(){ closeDrawer(); return !document.body.classList.contains('drawer-open'); })()");
+  await rendererEval("toggleDrawer('queue')");
+  await new Promise((r) => setTimeout(r, 400));   // 等滑出动画结束再量位置
+  const drawerCheck = await rendererEval(`(function(){
+    const before = false;   // 上一段已确认初始是关闭的
+    const d = document.getElementById('drawer');
+    const r = d ? d.getBoundingClientRect() : null;
+    const wrap = document.getElementById('playerFrameWrap').getBoundingClientRect();
     return {
+      beforeClosed: !before,
+      open: document.body.classList.contains('drawer-open'),
+      width: r ? Math.round(r.width) : 0,
+      rightAligned: !!(r && Math.abs(r.right - window.innerWidth) < 2),
+      playerNarrowed: !!(r && Math.round(wrap.right) <= Math.round(r.left) + 2),
       list: document.querySelectorAll('#queueList .queue-item').length,
-      now: ((document.getElementById('queueNow') || {}).textContent || '').trim().slice(0, 20),
       queueActive: document.getElementById('tabQueue').classList.contains('st-active'),
       searchHidden: document.getElementById('searchPane').style.display === 'none',
     };
   })()`);
-  const q = queueCheck.ok ? queueCheck.value : {};
-  if (q.queueActive && q.searchHidden) pass('右侧面板: 队列 / 搜索结果 可切换');
-  else fail('右侧面板切换异常', JSON.stringify(q).slice(0, 200));
+  const q = drawerCheck.ok ? drawerCheck.value : {};
+  if (q.beforeClosed && q.open && q.rightAligned && q.width >= 280) pass('抽屉: 右侧滑出 — 宽 ' + q.width + 'px');
+  else fail('抽屉打开异常', JSON.stringify(q).slice(0, 240));
+  if (q.playerNarrowed) pass('抽屉打开时播放器已让位');
+  else fail('播放器未让位(会被原生视图盖住)', JSON.stringify(q).slice(0, 200));
+  if (q.queueActive && q.searchHidden) pass('抽屉标签: 队列 / 搜索结果 可切换');
+  else fail('抽屉标签切换异常', JSON.stringify(q).slice(0, 200));
   if ((q.list || 0) > 0) pass('播放队列已渲染', q.list + ' 首待播');
-  else warn('播放队列为空', q.now || '(歌单为空时正常)');
+  else warn('播放队列为空', '(歌单为空时正常)');
 
-  const homeCheck = await rendererEval(`(function(){
+  const homeCheck = await rendererEval(`(async function(){
     renderHome();
+    // 榜单走网络, 给 6 秒; 失败时也应该有卡片(错误态)
+    await new Promise(function (r) { setTimeout(r, 6000); });
+    const wall = document.getElementById('chartWall');
+    const wallText = (wall && wall.textContent) || '';
     return {
-      hero: ((document.getElementById('homeHero') || {}).textContent || ''),
-      tiles: document.querySelectorAll('#homeRecent .home-tile').length,
-      hot: document.querySelectorAll('#homeScreen #hotList .hot-item').length,
+      hero: ((document.getElementById('homeHero') || {}).textContent || '').trim(),
+      heroIsCard: !!(document.getElementById('homeHero') || {}).className && /np-card/.test(document.getElementById('homeHero').className),
+      cards: document.querySelectorAll('#chartWall .chart-card').length,
+      rows: document.querySelectorAll('#chartWall .chart-row').length,
+      hasError: /取不到|加载失败|重试|还没有数据/.test(wallText),
+      sources: Array.prototype.map.call(document.querySelectorAll('#chartWall .chart-source'), function (el) { return el.textContent.trim(); })
     };
   })()`);
   const h = homeCheck.ok ? homeCheck.value : {};
-  if (/继续播放|开始/.test(String(h.hero))) pass('首页已渲染 — 推荐 ' + (h.hot || 0) + ' 条 / 最近 ' + (h.tiles || 0) + ' 首');
-  else fail('首页未渲染', JSON.stringify(h).slice(0, 200));
 
-  const paletteCheck = await rendererEval(`(async function(){
-    openPalette();
-    const visible = document.getElementById('palette').style.display !== 'none';
-    const items = document.querySelectorAll('#paletteList .palette-item').length;
-    document.getElementById('paletteInput').value = '晴天';
-    paletteOnInput();
-    await new Promise(function(r){ setTimeout(r, 700); });
-    const after = document.querySelectorAll('#paletteList .palette-item').length;
-    closePalette();
-    return { visible: visible, items: items, after: after, closed: document.getElementById('palette').style.display === 'none' };
+  if (h.heroIsCard && /正在播放|已暂停|还没在播放|从歌单|搜索/.test(String(h.hero))) {
+    pass('首页: 播放卡已渲染 — ' + String(h.hero).replace(/\s+/g, ' ').slice(0, 24));
+  } else {
+    fail('首页播放卡异常', JSON.stringify(h).slice(0, 240));
+  }
+
+  if ((h.cards || 0) >= 1 && ((h.rows || 0) >= 10 || h.hasError)) {
+    pass('首页: 榜单卡 — ' + h.cards + ' 张 / ' + (h.rows || 0) + ' 行' + (h.sources && h.sources.length ? ' / ' + h.sources.join('·') : ''));
+  } else {
+    fail('首页榜单卡异常', JSON.stringify(h).slice(0, 240));
+  }
+
+  const drawerSearch = await rendererEval(`(function(){
+    switchPanelTab('search');
+    const res = {
+      open: document.body.classList.contains('drawer-open'),
+      searchActive: document.getElementById('tabSearch').classList.contains('st-active'),
+      queueHidden: document.getElementById('queuePane').style.display === 'none',
+      inputExists: !!document.getElementById('searchInput'),
+    };
+    closeDrawer();
+    res.closed = !document.body.classList.contains('drawer-open');
+    return res;
   })()`);
-  const pl = paletteCheck.ok ? paletteCheck.value : {};
-  if (pl.visible && pl.items > 0 && pl.after > 0 && pl.closed) pass('命令面板可用', '命令 ' + pl.items + ' 项 / 搜索后 ' + pl.after + ' 项');
-  else fail('命令面板异常', JSON.stringify(pl).slice(0, 220));
+  const ds = drawerSearch.ok ? drawerSearch.value : {};
+  if (ds.open && ds.searchActive && ds.queueHidden && ds.inputExists && ds.closed) pass('抽屉: 搜索结果页可用且能关闭');
+  else fail('抽屉搜索结果异常', JSON.stringify(ds).slice(0, 220));
 
   await rendererEval("switchPanelTab('imported')");
   await new Promise((r) => setTimeout(r, 800));
@@ -296,8 +344,79 @@ async function run() {
     fail('导入歌单面板异常', JSON.stringify(im && (im.error || im.value || im)).slice(0, 220));
   }
 
-  // 回到队列, 保持后续截图的状态稳定
-  await rendererEval("switchPanelTab('queue')");
+  // 9.6 收起画面: 视图归零 + 音频继续(不暂停)
+  const collapseCheck = await rendererEval(`(function(){
+    closeDrawer();
+    // 造一首临时曲, 保证收起逻辑有对象可测
+    if (!playlist.length) playlist.push({ bvid: 'BVsmoke', title: '冒烟曲', author: '测试', duration: 200, cover: '' });
+    currentIndex = 0; isPlaying = true; currentDuration = 200;
+    collapsePlayerView();
+    return {
+      skip: false,
+      btnActive: document.getElementById('collapseBtn').classList.contains('is-active'),
+      icon: (document.querySelector('#collapseBtn use') || {}).getAttribute ? document.querySelector('#collapseBtn use').getAttribute('href') : '',
+      placeholderShown: document.getElementById('playerPlaceholder').style.display === 'flex',
+      stillPlaying: isPlaying
+    };
+  })()`);
+  const cc = collapseCheck.ok ? collapseCheck.value : {};
+  if (cc.skip) {
+    warn('收起画面: 歌单为空, 跳过');
+  } else {
+    const infoAfterCollapse = await rendererEval('window.bili.appInfo()');
+    const b1 = infoAfterCollapse.ok ? infoAfterCollapse.value.playerBounds : null;
+    const v1 = infoAfterCollapse.ok ? infoAfterCollapse.value.playerVisible : null;
+    if (cc.btnActive && String(cc.icon).includes('expand') && cc.placeholderShown && cc.stillPlaying
+        && v1 === false && b1 && b1.width === 0 && b1.height === 0) {
+      pass('收起画面: 视图归零且仍在播');
+    } else {
+      fail('收起画面异常', JSON.stringify({ cc, v1, b1 }).slice(0, 240));
+    }
+
+    // 收起状态下播放器会去 load 下一首: 视图不能因此被顶回来
+    await rendererEval("window.bili.playerLoad('BV1GJ411x7h7', 0)");
+    await new Promise((r) => setTimeout(r, 1500));
+    const infoAuto = await rendererEval('window.bili.appInfo()');
+    const b3 = infoAuto.ok ? infoAuto.value.playerBounds : null;
+    const v3 = infoAuto.ok ? infoAuto.value.playerVisible : null;
+    if (v3 === false && b3 && b3.width === 0 && b3.height === 0) {
+      pass('收起后切歌: 画面不会被顶回来');
+    } else {
+      fail('收起后切歌把画面顶回来了', JSON.stringify({ v3, b3 }).slice(0, 200));
+    }
+
+    // 收起状态模拟"自动切下一首": 首页不能被藏起来(否则中间纯黑)
+    const autoAdv = await rendererEval(`(function(){
+      _autoAdvancing = true;
+      try { playByIndex(Math.min(1, playlist.length - 1)); } finally { _autoAdvancing = false; }
+      const ph = document.getElementById('playerPlaceholder');
+      return {
+        collapsed: _playerCollapsed,
+        placeholder: ph ? ph.style.display : 'missing',
+        hero: ((document.getElementById('homeHero') || {}).textContent || '').trim().slice(0, 16)
+      };
+    })()`);
+    const aa = autoAdv.ok ? autoAdv.value : {};
+    if (aa.collapsed === true && aa.placeholder === 'flex') {
+      pass('收起后自动切歌: 首页仍在 — ' + aa.hero);
+    } else {
+      fail('收起后自动切歌把首页藏了(黑屏)', JSON.stringify(aa).slice(0, 200));
+    }
+
+    await rendererEval('expandPlayerView()');
+    const infoAfterExpand = await rendererEval('window.bili.appInfo()');
+    const b2 = infoAfterExpand.ok ? infoAfterExpand.value.playerBounds : null;
+    const v2 = infoAfterExpand.ok ? infoAfterExpand.value.playerVisible : null;
+    if (v2 === true && b2 && b2.width > 0 && b2.height > 0) {
+      pass('展开画面: 视图恢复 — ' + b2.width + '×' + b2.height);
+    } else {
+      fail('展开画面异常', JSON.stringify({ v2, b2 }).slice(0, 200));
+    }
+    await rendererEval('(function(){ isPlaying = false; stopPlayback(); })()');
+  }
+
+  // 收起抽屉, 保持后续截图的状态稳定
+  await rendererEval("closeDrawer()");
 
   // 10. 皮肤(主题): 面板 / 切换 / 选中态 / 刷新后保持
   const themePanel = await rendererEval(`(function(){

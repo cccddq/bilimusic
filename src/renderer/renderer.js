@@ -42,9 +42,21 @@ let _currentPageIndex = -1;     // 当前播放的子集索引 (-1 = 不是子�
 let _pageStartTime = 0;         // 子集起始偏移秒数
 let _playerSuppressBounds = false; // 临时阻止发送坐标到播放器视图
 let _playerFullscreen = false;   // 应用级全屏：播放器覆盖整个窗口
+let _playerCollapsed = false;    // 画面已收起(音频仍在播)
+let _autoAdvancing = false;      // 正在自动切歌, 此时不要把画面弹回来
+// ---- 榜单(各音乐站) ----
+const CHART_PICKS_DEFAULT = { netease: 'hot', qq: 'hot', kugou: 'top500' };
+let _chartPicks = Object.assign({}, CHART_PICKS_DEFAULT);   // 每源当前榜单 key
+let _chartPages = { netease: 0, qq: 0, kugou: 0 };          // 每源当前页码
+let _chartData = {};                                        // 主进程返回的榜单数据
+let _chartCatalog = null;                                   // 各源可用榜单目录
+let _chartLoading = false;
+const CHART_PER_PAGE = 10;
 let _playlistViewMode = 'card'; // 歌单显示模式: 'card' (卡片) 或 'list' (列表)
 let _playlistFocus = false;        // 专注视图: 全界面只显示歌单(卡片形式)
 let _viewModeBeforeFocus = 'card'; // 进入专注视图前的显示模式, 退出时还原
+let _drawerOpen = false;            // 右侧抽屉是否打开
+let _drawerTab = 'queue';           // 抽屉当前标签: queue | search | imported
 
 // ---- 皮肤(主题) ----
 // bg/surface/accent/accent2/blue 只用于面板里的色块预览, 真正生效的调色板在 style.css
@@ -273,10 +285,10 @@ function init() {
   // 播放器页加载失败时给出提示(否则中间栏会一直空白)
   window.bili.onPlayerFailed((info) => showPlayerError(info));
 
-  // 右侧默认展示播放队列, 中间舞台展示首页
-  switchPanelTab('queue');
+  // 抽屉默认停在「队列」标签, 但不自动打开; 中间舞台展示首页
+  setPanelTab('queue');
   renderHome();
-  loadHotMusic();
+  loadCharts();
 
   // 初始化导入歌单（加载随机歌名 + 启动定时刷新）
   initImportedSongs();
@@ -406,8 +418,14 @@ function renderHotList(songs) {
   listEl.innerHTML = html;
 }
 
-// ============ 右侧面板: 播放队列 / 搜索结果 ============
-function switchPanelTab(tab) {
+// ============ 右侧抽屉: 播放队列 / 搜索结果 ============
+// 右栏不再常驻, 改成按需滑出的抽屉。
+// 注意: 中间播放器是主进程的原生视图(WebContentsView), 永远盖在网页之上;
+// 抽屉要显示在它右边, 就必须让 .col-player 让出宽度(见 style.css),
+// 原生视图再据 #playerFrameWrap 的 rect 同步缩窄 —— 否则抽屉会被播放器挡住。
+
+/** 只切换抽屉内的标签, 不打开抽屉(启动时用) */
+function setPanelTab(tab) {
   const tabQueue = document.getElementById('tabQueue');
   const tabSearch = document.getElementById('tabSearch');
   const queuePane = document.getElementById('queuePane');
@@ -416,9 +434,10 @@ function switchPanelTab(tab) {
   const toggle = document.getElementById('importToggleBtn');
   if (!tabQueue || !queuePane) return;
 
-  const isQueue = tab === 'queue';
-  const isSearch = tab === 'search';
-  const isImported = tab === 'imported';
+  _drawerTab = (tab === 'search' || tab === 'imported') ? tab : 'queue';
+  const isQueue = _drawerTab === 'queue';
+  const isSearch = _drawerTab === 'search';
+  const isImported = _drawerTab === 'imported';
 
   tabQueue.classList.toggle('st-active', isQueue);
   tabSearch.classList.toggle('st-active', isSearch);
@@ -431,10 +450,56 @@ function switchPanelTab(tab) {
     const container = document.getElementById('searchResultsContainer');
     if (container && !container.innerHTML.trim()) {
       container.innerHTML = '<div class="empty-state"><div class="empty-ico">' + icon('search') + '</div>'
-        + '<div class="empty-title">还没有搜索结果</div><div>用上方搜索框或 Ctrl+K 找歌</div></div>';
+        + '<div class="empty-title">还没有搜索结果</div><div>用上方搜索框找歌</div></div>';
     }
   }
   if (isImported) refreshImportedSongs();
+}
+
+/** 打开抽屉并直接聚焦搜索框(顶栏/首页按钮用) */
+function openSearchDrawer() { openDrawer('search', true); }
+
+/** 打开抽屉(可指定标签 / 是否聚焦搜索框) */
+function openDrawer(tab, focusSearch) {
+  if (tab) setPanelTab(tab);
+  if (!_drawerOpen) {
+    _drawerOpen = true;
+    document.body.classList.add('drawer-open');
+    const drawer = document.getElementById('drawer');
+    if (drawer) drawer.setAttribute('aria-hidden', 'false');
+    const qb = document.getElementById('queueBtn');
+    if (qb) qb.classList.add('is-active');
+    // 立刻让播放器原生视图缩窄, 否则会被它盖住
+    relayoutPlayerView();
+  }
+  if (focusSearch) {
+    const input = document.getElementById('searchInput');
+    if (input) { input.focus(); if (input.select) input.select(); }
+  }
+}
+
+function closeDrawer() {
+  if (!_drawerOpen) return;
+  _drawerOpen = false;
+  document.body.classList.remove('drawer-open');
+  const drawer = document.getElementById('drawer');
+  if (drawer) drawer.setAttribute('aria-hidden', 'true');
+  const qb = document.getElementById('queueBtn');
+  if (qb) qb.classList.remove('is-active');
+  relayoutPlayerView();
+}
+
+function toggleDrawer(tab) {
+  const want = tab || 'queue';
+  if (_drawerOpen && _drawerTab === want) { closeDrawer(); return; }
+  openDrawer(want);
+}
+
+function isDrawerOpen() { return _drawerOpen; }
+
+/** 兼容旧调用: 切标签并打开抽屉 */
+function switchPanelTab(tab) {
+  openDrawer(tab === 'search' ? 'search' : (tab === 'imported' ? 'imported' : 'queue'));
 }
 
 function switchSearchTab(tab) {
@@ -444,7 +509,7 @@ function switchSearchTab(tab) {
 /** 旧的欢迎页入口(推荐列表现在在首页), 保留以免其他调用点报错 */
 function showWelcomeScreen() {
   initImportedSongs();
-  loadHotMusic();
+  loadCharts();
 }
 
 /** 渲染右侧播放队列: 正在播放 + 接下来 */
@@ -505,84 +570,203 @@ function renderQueue() {
 /** 渲染首页: 继续播放 + 最近添加 */
 function renderHome() {
   const heroEl = document.getElementById('homeHero');
-  const rowEl = document.getElementById('homeRecent');
-  if (!heroEl || !rowEl) return;
+  if (!heroEl) return;
 
-  const songs = getPlaylist();
+  const cur = (currentIndex >= 0 && playlist[currentIndex]) ? playlist[currentIndex] : null;
+  const live = cur && (isPlaying || currentIndex >= 0);
 
-  // 继续播放: 优先用上次播放的歌曲, 否则用歌单第一首
-  let last = null;
-  try {
-    const saved = JSON.parse(localStorage.getItem('bilimusic_last_played') || 'null');
-    if (saved && saved.bvid) {
-      last = songs.find((s) => s.bvid === saved.bvid) || saved;
-    }
-  } catch (e) { /* ignore */ }
-  if (!last && songs.length) last = songs[0];
-
-  if (last) {
-    heroEl.innerHTML = '<div class="home-hero">'
-      + '<img class="hero-cover" alt="">'
-      + '<div class="hero-body">'
-      + '<div class="hero-kicker">继续播放</div>'
-      + '<div class="hero-title">' + escapeHtml(last.title || '未知') + '</div>'
-      + '<div class="hero-sub">' + escapeHtml(last.author || '') + '</div>'
+  if (!live) {
+    heroEl.className = 'np-card idle';
+    heroEl.innerHTML = '<div class="np-card-cover">' + icon('headphones') + '</div>'
+      + '<div class="np-card-body">'
+      + '<div class="np-card-kicker">还没在播放</div>'
+      + '<div class="np-card-title">从歌单里选一首开始</div>'
+      + '<div class="np-card-sub">或者看下面的榜单，点一首去 B 站找</div>'
       + '</div>'
-      + '<div class="hero-actions">'
-      + '<button class="btn-accent" onclick="playHomeHero()">' + icon('play', 'ic-sm') + '播放</button>'
-      + '</div>'
+      + '<div class="np-card-actions">'
+      + '<button class="btn-accent" onclick="openSearchDrawer()">' + icon('search', 'ic-sm') + '搜索</button>'
       + '</div>';
-    const img = heroEl.querySelector('.hero-cover');
-    if (img) {
-      if (last.cover) proxyImg(last.cover).then((d) => { if (d) img.src = d; });
-      else img.style.opacity = '.25';
-    }
-  } else {
-    heroEl.innerHTML = '<div class="home-hero">'
-      + '<div class="hero-body">'
-      + '<div class="hero-kicker">开始</div>'
-      + '<div class="hero-title">还没有歌单内容</div>'
-      + '<div class="hero-sub">搜索一首歌，加入歌单后就能在这里继续听</div>'
-      + '</div>'
-      + '<div class="hero-actions">'
-      + '<button class="btn-accent" onclick="openPalette()">' + icon('search', 'ic-sm') + '搜索</button>'
-      + '</div>'
-      + '</div>';
-  }
-
-  // 最近添加: 取当前歌单最后 6 首
-  if (!songs.length) {
-    rowEl.innerHTML = '<div class="home-empty">歌单里还没有歌，按 Ctrl+K 搜索添加</div>';
     return;
   }
-  const recent = songs.slice(-6).reverse();
-  let html = '<div class="section-head"><span data-icon="clock"></span><span class="section-title">最近添加</span></div>'
-    + '<div class="home-row">';
-  recent.forEach((song) => {
-    const idx = songs.indexOf(song);
-    html += '<div class="home-tile" onclick="playByIndex(' + idx + ')" title="' + escapeAttr(song.title || '') + '">'
-      + '<div class="tile-cover"><span>' + icon('music') + '</span></div>'
-      + '<div class="tile-title">' + escapeHtml(song.title || '未知') + '</div>'
-      + '<div class="tile-meta">' + escapeHtml(song.author || '') + '</div>'
-      + '</div>';
-  });
-  html += '</div>';
-  rowEl.innerHTML = html;
-  if (window.BMIcons) window.BMIcons.hydrate(rowEl);
 
-  rowEl.querySelectorAll('.home-tile').forEach((tile, i) => {
-    const song = recent[i];
-    const imgEl = tile.querySelector('.tile-cover');
-    if (song && song.cover && imgEl) {
-      proxyImg(song.cover).then((d) => { if (d) imgEl.innerHTML = '<img src="' + d + '" alt="">'; });
+  const pct = currentDuration > 0 ? Math.min(100, (elapsedSeconds / currentDuration) * 100) : 0;
+  const kicker = isPlaying ? '正在播放' : '已暂停';
+  const playBtn = '<button class="btn-ghost-light" onclick="togglePlay()">'
+    + icon(isPlaying ? 'pause' : 'play', 'ic-sm') + (isPlaying ? '暂停' : '继续') + '</button>';
+  const backBtn = _playerCollapsed
+    ? '<button class="btn-accent" onclick="expandPlayerView()">' + icon('expand', 'ic-sm') + '回到画面</button>'
+    : '';
+
+  heroEl.className = 'np-card';
+  heroEl.innerHTML = '<div class="np-card-cover"></div>'
+    + '<div class="np-card-body">'
+    + '<div class="np-card-kicker">' + kicker + '</div>'
+    + '<div class="np-card-title">' + escapeHtml(cur.title || '未知') + '</div>'
+    + '<div class="np-card-sub">' + escapeHtml(cur.author || '') + '</div>'
+    + '<div class="np-card-bar"><i style="width:' + pct.toFixed(1) + '%"></i></div>'
+    + '<div class="np-card-time num">' + formatDuration(elapsedSeconds) + ' / ' + formatDuration(currentDuration) + '</div>'
+    + '</div>'
+    + '<div class="np-card-actions">' + playBtn + backBtn + '</div>';
+
+  const cover = heroEl.querySelector('.np-card-cover');
+  if (cover) {
+    if (cur.cover) {
+      proxyImg(cur.cover).then((d) => {
+        if (d) cover.innerHTML = '<img src="' + d + '" alt="">';
+        else cover.innerHTML = icon('music');
+      });
+    } else {
+      cover.innerHTML = icon('music');
     }
+  }
+}
+
+// ============ 各音乐站榜单(网易云 / QQ / 酷狗) ============
+function _chartMeta(source) {
+  const list = _chartCatalog || [];
+  return list.find((c) => c.key === source) || null;
+}
+
+/** 拉取当前三张卡对应的榜单(命中主进程缓存则不重复请求) */
+async function loadCharts(force) {
+  const wall = document.getElementById('chartWall');
+  if (!wall) return;
+  _chartLoading = true;
+  renderChartWall();
+  try {
+    const resp = await window.bili.musicCharts(_chartPicks, !!force);
+    if (!resp || !resp.ok) throw new Error((resp && resp.message) || '抓取失败');
+    if (resp.catalog && resp.catalog.length) _chartCatalog = resp.catalog;
+    _chartData = resp.data || {};
+  } catch (e) {
+    // 单个源失败不影响其他源; 这里只处理整体失败
+    if (!Object.keys(_chartData).length) _chartData = { _error: { ok: false, error: e.message } };
+  } finally {
+    _chartLoading = false;
+    renderChartWall();
+  }
+}
+
+/** 卡内切榜 */
+function switchChart(source, chart) {
+  if (!source || !chart) return;
+  if (_chartPicks[source] === chart) return;
+  _chartPicks[source] = chart;
+  _chartPages[source] = 0;
+  loadCharts(false);
+}
+
+/** 全局换一换: 三家各自切到下一个榜 */
+function refreshCharts(force) {
+  Object.keys(_chartPicks).forEach((source) => {
+    const meta = _chartMeta(source);
+    if (meta && meta.charts && meta.charts.length) {
+      const idx = meta.charts.findIndex((c) => c.key === _chartPicks[source]);
+      const next = meta.charts[(idx + 1) % meta.charts.length];
+      if (next) _chartPicks[source] = next.key;
+    }
+    _chartPages[source] = 0;
   });
+  loadCharts(!!force);
+}
+
+/** 翻页(替换式) */
+function chartPage(source, delta) {
+  const data = _chartData[source];
+  const songs = (data && data.songs) || [];
+  const max = Math.max(0, Math.ceil(songs.length / CHART_PER_PAGE) - 1);
+  const next = Math.min(max, Math.max(0, (_chartPages[source] || 0) + delta));
+  if (next === (_chartPages[source] || 0)) return;
+  _chartPages[source] = next;
+  renderChartWall();
+}
+
+/** 点榜单里的一首歌 → 用「歌名 歌手」去 B 站搜 */
+function chartSearch(title, artist) {
+  const t = String(title || '').trim();
+  if (!t) return;
+  const a = String(artist || '').trim();
+  quickSearch(a ? t + ' ' + a : t);
+}
+
+function renderChartWall() {
+  const wall = document.getElementById('chartWall');
+  if (!wall) return;
+
+  if (_chartLoading && !Object.keys(_chartData).length) {
+    wall.innerHTML = [0, 1, 2].map(() => '<div class="chart-card"><div class="chart-skeleton">'
+      + skeletonRows(6, false) + '</div></div>').join('');
+    return;
+  }
+
+  if (_chartData._error) {
+    wall.innerHTML = '<div class="chart-card"><div class="chart-error">榜单加载失败<br>'
+      + escapeHtml(_chartData._error.error || '') + '<br><button class="ghost-btn" onclick="loadCharts(true)">重试</button></div></div>';
+    return;
+  }
+
+  const sources = (_chartCatalog && _chartCatalog.length)
+    ? _chartCatalog
+    : Object.keys(_chartPicks).map((k) => ({ key: k, label: k, color: '#888', charts: [] }));
+
+  wall.innerHTML = sources.map((src) => renderChartCard(src)).join('');
+}
+
+function renderChartCard(src) {
+  const data = _chartData[src.key];
+  const page = _chartPages[src.key] || 0;
+  const songs = (data && data.songs) || [];
+  const totalPages = Math.max(1, Math.ceil(songs.length / CHART_PER_PAGE));
+  const slice = songs.slice(page * CHART_PER_PAGE, page * CHART_PER_PAGE + CHART_PER_PAGE);
+
+  const tabs = (src.charts || []).map((c) => {
+    const active = _chartPicks[src.key] === c.key ? ' active' : '';
+    return '<button class="chart-tab' + active + '" data-action="chart-tab" data-source="' + escapeAttr(src.key)
+      + '" data-chart="' + escapeAttr(c.key) + '">' + escapeHtml(c.name) + '</button>';
+  }).join('');
+
+  let body;
+  if (data && data.ok === false) {
+    body = '<div class="chart-error">这个榜暂时取不到<br>' + escapeHtml(data.error || '')
+      + '<br><button class="ghost-btn" data-action="chart-reload" data-source="' + escapeAttr(src.key) + '">重试</button></div>';
+  } else if (!slice.length) {
+    body = '<div class="chart-error">还没有数据</div>';
+  } else {
+    body = '<div class="chart-list">' + slice.map((song, i) => {
+      const rank = page * CHART_PER_PAGE + i + 1;
+      const top = rank <= 3 ? ' top' : '';
+      return '<div class="chart-row" data-action="chart-search" data-title="' + escapeAttr(song.title)
+        + '" data-artist="' + escapeAttr(song.artist || '') + '" title="在 B 站搜索：' + escapeAttr(song.title) + ' ' + escapeAttr(song.artist || '') + '">'
+        + '<span class="chart-rank' + top + '">' + rank + '</span>'
+        + '<span class="chart-name">' + escapeHtml(song.title) + '</span>'
+        + '<span class="chart-artist">' + escapeHtml(song.artist || '') + '</span>'
+        + '<span class="chart-go">' + icon('search', 'ic-sm') + '</span>'
+        + '</div>';
+    }).join('') + '</div>';
+  }
+
+  const stale = data && data.stale ? '<span class="chart-pageno">缓存</span>' : '';
+  const foot = '<div class="chart-foot">'
+    + '<button class="chart-page" data-action="chart-page" data-source="' + escapeAttr(src.key) + '" data-delta="-1"'
+    + (page <= 0 ? ' disabled' : '') + '>' + icon('chevron-left', 'ic-sm') + '上一页</button>'
+    + '<span class="chart-pageno">' + (page + 1) + '/' + totalPages + '</span>'
+    + '<button class="chart-page" data-action="chart-page" data-source="' + escapeAttr(src.key) + '" data-delta="1"'
+    + (page >= totalPages - 1 ? ' disabled' : '') + '>下一页' + icon('chevron-right', 'ic-sm') + '</button>'
+    + stale + '</div>';
+
+  return '<div class="chart-card">'
+    + '<div class="chart-card-head">'
+    + '<span class="chart-dot" style="background:' + escapeAttr(src.color || '#888') + '"></span>'
+    + '<span class="chart-source">' + escapeHtml(src.label) + '</span>'
+    + '<div class="chart-tabs">' + tabs + '</div>'
+    + '</div>'
+    + body + foot + '</div>';
 }
 
 /** 首页主按钮: 播放上次那首 */
 function playHomeHero() {
   const songs = getPlaylist();
-  if (!songs.length) { openPalette(); return; }
+  if (!songs.length) { openSearchDrawer(); return; }
   let index = 0;
   try {
     const saved = JSON.parse(localStorage.getItem('bilimusic_last_played') || 'null');
@@ -594,168 +778,15 @@ function playHomeHero() {
   playByIndex(index);
 }
 
-// ============ 命令面板 (Ctrl+K) ============
-var _paletteItems = [];
-var _paletteIndex = 0;
-var _paletteTimer = null;
-var _paletteSeq = 0;
-
-const PALETTE_COMMANDS = [
-  { id: 'play', title: '播放 / 暂停', meta: '播放控制', icon: 'play', run: function () { togglePlay(); } },
-  { id: 'next', title: '下一首', meta: '播放控制', icon: 'next', run: function () { next(); } },
-  { id: 'prev', title: '上一首', meta: '播放控制', icon: 'prev', run: function () { prev(); } },
-  { id: 'queue', title: '查看播放队列', meta: '视图', icon: 'queue', run: function () { switchPanelTab('queue'); } },
-  { id: 'focus', title: '歌单专注视图', meta: '视图', icon: 'grid', run: function () { togglePlaylistFocus(true); } },
-  { id: 'theme', title: '更换皮肤', meta: '视图', icon: 'palette', run: function () { toggleThemePanel(); } },
-  { id: 'import', title: '导入歌单 txt', meta: '数据', icon: 'download', run: function () { importPlaylistFile(); } },
-  { id: 'export', title: '导出全部歌单', meta: '数据', icon: 'upload', run: function () { exportPlaylist(); } },
-  { id: 'settings', title: '设置与关于', meta: '其他', icon: 'settings', run: function () { toggleSettings(); } }
-];
-
-function openPalette() {
-  const el = document.getElementById('palette');
-  if (!el) return;
-  el.style.display = 'flex';
-  const input = document.getElementById('paletteInput');
-  if (input) { input.value = ''; input.focus(); }
-  paletteRenderCommands();
-}
-
-function closePalette() {
-  const el = document.getElementById('palette');
-  if (el) el.style.display = 'none';
-  _paletteSeq++;
-}
-
-function paletteRenderCommands() {
-  _paletteItems = PALETTE_COMMANDS.map(function (c) {
-    return { kind: 'cmd', cmd: c, title: c.title, meta: c.meta, icon: c.icon };
-  });
-  _paletteIndex = 0;
-  palettePaint();
-}
-
-function palettePaint() {
-  const list = document.getElementById('paletteList');
-  if (!list) return;
-  if (!_paletteItems.length) {
-    list.innerHTML = '<div class="palette-empty">没有匹配的结果</div>';
-    return;
-  }
-  let html = '';
-  _paletteItems.forEach(function (item, i) {
-    const active = i === _paletteIndex ? ' active' : '';
-    if (item.kind === 'cmd') {
-      html += '<div class="palette-item' + active + '" data-idx="' + i + '" onclick="paletteClick(' + i + ')">'
-        + '<span class="pi-cmd">' + icon(item.icon) + '</span>'
-        + '<div class="pi-body"><div class="pi-title">' + escapeHtml(item.title) + '</div>'
-        + '<div class="pi-meta">' + escapeHtml(item.meta) + '</div></div>'
-        + '<span class="pi-enter">' + (active ? 'Enter' : '') + '</span>'
-        + '</div>';
-    } else {
-      html += '<div class="palette-item' + active + '" data-idx="' + i + '" onclick="paletteClick(' + i + ')">'
-        + '<div class="pi-body"><div class="pi-title">' + escapeHtml(item.title) + '</div>'
-        + '<div class="pi-meta">' + escapeHtml(item.meta) + '</div></div>'
-        + '<span class="pi-enter">' + (active ? 'Enter' : '') + '</span>'
-        + '</div>';
-    }
-  });
-  list.innerHTML = html;
-  const activeEl = list.querySelector('.palette-item.active');
-  if (activeEl && activeEl.scrollIntoView) activeEl.scrollIntoView({ block: 'nearest' });
-}
-
-function paletteOnInput() {
-  const input = document.getElementById('paletteInput');
-  if (!input) return;
-  const q = input.value.trim();
-  if (_paletteTimer) clearTimeout(_paletteTimer);
-  if (!q) { paletteRenderCommands(); return; }
-
-  // 先按命令名过滤, 立刻有反馈
-  const matched = PALETTE_COMMANDS.filter(function (c) {
-    return (c.title + c.meta).toLowerCase().indexOf(q.toLowerCase()) >= 0;
-  });
-  _paletteItems = matched.map(function (c) {
-    return { kind: 'cmd', cmd: c, title: c.title, meta: c.meta, icon: c.icon };
-  });
-  _paletteIndex = 0;
-  palettePaint();
-
-  _paletteTimer = setTimeout(function () { paletteSearch(q); }, 280);
-}
-
-async function paletteSearch(q) {
-  const seq = ++_paletteSeq;
-  const list = document.getElementById('paletteList');
-  if (list) list.innerHTML = '<div class="palette-loading">' + skeletonRows(3, false) + '</div>';
-  try {
-    const resp = await window.bili.search(q, 1);
-    if (seq !== _paletteSeq) return;   // 已有更新的输入
-    const results = (resp && resp.ok && resp.data && (resp.data.results || resp.data)) || [];
-    const cmds = _paletteItems.filter(function (it) { return it.kind === 'cmd'; });
-    const vids = results.slice(0, 8).map(function (v) {
-      return {
-        kind: 'video', video: v, title: v.title, icon: 'play',
-        meta: (v.author || '') + (v.duration ? ' · ' + formatDuration(v.duration) : '')
-      };
-    });
-    _paletteItems = vids.length ? vids.concat(cmds) : cmds;
-    _paletteIndex = 0;
-    if (!_paletteItems.length) {
-      list.innerHTML = '<div class="palette-empty">没有找到「' + escapeHtml(q) + '」</div>';
-      return;
-    }
-    palettePaint();
-  } catch (e) {
-    if (seq === _paletteSeq && list) list.innerHTML = '<div class="palette-empty">搜索失败，检查网络后重试</div>';
-  }
-}
-
-function paletteOnKey(e) {
-  if (e.key === 'ArrowDown') {
-    e.preventDefault();
-    if (_paletteItems.length) { _paletteIndex = (_paletteIndex + 1) % _paletteItems.length; palettePaint(); }
-  } else if (e.key === 'ArrowUp') {
-    e.preventDefault();
-    if (_paletteItems.length) { _paletteIndex = (_paletteIndex - 1 + _paletteItems.length) % _paletteItems.length; palettePaint(); }
-  } else if (e.key === 'Enter') {
-    e.preventDefault();
-    paletteRun(_paletteIndex);
-  } else if (e.key === 'Escape') {
-    e.preventDefault();
-    closePalette();
-  }
-}
-
-function paletteClick(i) { paletteRun(i); }
-
-function paletteRun(i) {
-  const item = _paletteItems[i];
-  if (!item) return;
-  closePalette();
-  if (item.kind === 'cmd') {
-    item.cmd.run();
-  } else if (item.kind === 'video') {
-    const v = item.video;
-    addToPlaylist({ bvid: v.bvid, title: v.title, author: v.author, duration: v.duration, cover: v.cover }, true);
-    addSearchHistory(item.title);
-    showToast('开始播放：' + item.title, 'success');
-  }
-}
-
-// Ctrl+K / Ctrl+P 打开命令面板; 面板开着时 Esc 关闭
+// Ctrl+K: 打开抽屉并聚焦搜索框(命令面板已取消); Esc: 先关抽屉
 document.addEventListener('keydown', function (e) {
-  const palette = document.getElementById('palette');
-  const isOpen = palette && palette.style.display !== 'none';
   if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K' || e.key === 'p' || e.key === 'P')) {
     e.preventDefault();
-    if (isOpen) closePalette(); else openPalette();
+    if (_drawerOpen) closeDrawer(); else openSearchDrawer();
     return;
   }
-  if (isOpen && e.key === 'Escape') { e.preventDefault(); closePalette(); }
+  if (e.key === 'Escape' && _drawerOpen) { closeDrawer(); }
 });
-
 
 // ============ 播放器视图坐标同步 ============
 // 把中间列占位区相对窗口内容区的坐标发给主进程，让 WebContentsView 精确覆盖。
@@ -769,7 +800,9 @@ function relayoutPlayerView() {
     // 全屏：播放器覆盖整个窗口（保留底栏）
     const bar = document.getElementById('playerBar');
     const barH = bar ? bar.getBoundingClientRect().height : 80;
-    rect = { x: 0, y: 0, width: window.innerWidth, height: Math.max(0, window.innerHeight - barH) };
+    // 全屏时抽屉若打开, 也要让出右侧宽度, 否则抽屉会被原生视图盖住
+    const dw = _drawerOpen ? (document.getElementById('drawer') || {}).offsetWidth || 340 : 0;
+    rect = { x: 0, y: 0, width: Math.max(0, window.innerWidth - dw), height: Math.max(0, window.innerHeight - barH) };
   } else {
     const el = document.getElementById('playerFrameWrap');
     if (!el) return;
@@ -1147,6 +1180,7 @@ function togglePlaylistExpand(index) {
 
 /** 播放多P视频中的某一分集 */
 function playPage(parentIndex, pageIndex) {
+  if (!_autoAdvancing) expandPlayerView();
   _playerSuppressBounds = false;
   const songs = getPlaylist();
   const item = songs[parentIndex];
@@ -1167,10 +1201,11 @@ function playPage(parentIndex, pageIndex) {
   console.log('[playPage] page', page.page, 'startTime', page.startTime, 'for', item.bvid);
   // 用 page+1 因为 B 站的 ?p= 是 1-indexed
   window.bili.playerLoad(item.bvid, 0, page.page);
-  document.getElementById('playerPlaceholder').style.display = 'none';
+  document.getElementById('playerPlaceholder').style.display = _playerCollapsed ? 'flex' : 'none';
   relayoutPlayerView();
   
   updatePlayerUI();  // 自动显示子集标题
+  if (_playerCollapsed) renderHome();
   showToast(`▶ ${page.part || '第' + (pageIndex + 1) + '段'}`, '');
 
   // 进入播放器全屏（隐藏左右侧栏）
@@ -1205,7 +1240,7 @@ function renderPlaylistSelector() {
   const current = playlists[currentPlaylistId];
   const iconOf = (id) => (id === 'favorites' ? 'heart' : id === 'default' ? 'music' : 'folder');
   let html = `<button class="ps-current" onclick="togglePlaylistDropdown(event)">
-    ${icon(iconOf(currentPlaylistId))} ${escapeHtml(current?.name || '歌单')}
+    ${icon(iconOf(currentPlaylistId))}<span class="ps-name">${escapeHtml(current?.name || '歌单')}</span>
     <span class="ps-chev">${icon('chevron-down', 'ic-sm')}</span>
   </button>`;
   html += `<div class="ps-dropdown" id="playlistDropdown" style="display:none;">`;
@@ -1303,11 +1338,12 @@ function enterPlayerFullscreen() {
 
 // ============ 全屏（播放器覆盖窗口，保留底栏） ============
 function togglePlayerFullscreen() {
+  // 画面被收起时要先展开, 否则全屏会是一块空的
+  if (_playerCollapsed) expandPlayerView();
   _playerFullscreen = !_playerFullscreen;
   const btn = document.getElementById('fullscreenBtn');
   if (btn) {
     btn.innerHTML = icon(_playerFullscreen ? 'maximize-off' : 'maximize');
-  btn.title = _playerFullscreen ? '退出全屏' : '全屏';
     btn.title = _playerFullscreen ? '退出全屏' : '播放窗口全屏';
   }
   relayoutPlayerView();
@@ -1317,9 +1353,48 @@ function togglePlayerFullscreen() {
 // _playerFullscreen = true  → playerView 覆盖整个窗口（保留底栏）
 // _playerFullscreen = false → playerView 显示在中间列
 
+// ============ 收起画面: 只收画面, 音乐继续 ============
+function syncCollapseButton() {
+  const btn = document.getElementById('collapseBtn');
+  if (!btn) return;
+  btn.innerHTML = icon(_playerCollapsed ? 'expand' : 'collapse');
+  btn.title = _playerCollapsed ? '展开画面' : '收起画面（音乐继续）';
+  btn.classList.toggle('is-active', _playerCollapsed);
+}
+
+function togglePlayerCollapsed() {
+  if (_playerCollapsed) expandPlayerView(); else collapsePlayerView();
+}
+
+/** 收起: 原生视图缩成 0×0(不暂停), 中间回到首页 */
+function collapsePlayerView() {
+  if (!playlist[currentIndex]) { showToast('还没有在播放的歌'); return; }
+  _playerCollapsed = true;
+  window.bili.playerCollapse();
+  const ph = document.getElementById('playerPlaceholder');
+  if (ph) ph.style.display = 'flex';
+  syncCollapseButton();
+  renderHome();
+  renderQueue();
+}
+
+/** 展开: 把画面摆回去 */
+function expandPlayerView() {
+  if (!_playerCollapsed) return;
+  _playerCollapsed = false;
+  window.bili.playerExpand();
+  const ph = document.getElementById('playerPlaceholder');
+  if (ph) ph.style.display = 'none';
+  syncCollapseButton();
+  relayoutPlayerView();
+  renderHome();
+}
+
 // ============ PLAYER (内嵌 WebContentsView) ============
 function playByIndex(index) {
   if (index < 0 || index >= playlist.length) return;
+  // 用户主动点歌说明想看画面; 自动切下一首则保持收起
+  if (!_autoAdvancing) expandPlayerView();
   _playerSuppressBounds = false;
 
   currentIndex = index;
@@ -1330,8 +1405,8 @@ function playByIndex(index) {
   // 通知主进程: 把内嵌播放器视图加载到该 BV 页
   window.bili.playerLoad(video.bvid, 0);
 
-  // 隐藏欢迎占位，露出底层播放器视图并定位
-  document.getElementById('playerPlaceholder').style.display = 'none';
+  // 收起状态下不要把首页藏起来(自动切下一首时会变成黑屏)
+  document.getElementById('playerPlaceholder').style.display = _playerCollapsed ? 'flex' : 'none';
   relayoutPlayerView();
 
   isPlaying = true;
@@ -1409,7 +1484,7 @@ function togglePlay() {
   } else {
     // 继续播放: 直接恢复 B 站播放器的 video 元素
     window.bili.playerResume();
-    document.getElementById('playerPlaceholder').style.display = 'none';
+    document.getElementById('playerPlaceholder').style.display = _playerCollapsed ? 'flex' : 'none';
     isPlaying = true;
     // 用已记录的 elapsedSeconds 续接进度计时
     playbackStartTime = Date.now();
@@ -1423,6 +1498,8 @@ function togglePlay() {
 
 function stopPlayback() {
   setStageTint(null);
+  _playerCollapsed = false;
+  syncCollapseButton();
   _playerSuppressBounds = true;
   window.bili.playerHide();
   document.getElementById('playerPlaceholder').style.display = 'flex';
@@ -1470,14 +1547,19 @@ function finishSong() {
 }
 
 function onSongEnd() {
-  if (playMode === 'single-loop') {
-    if (_currentPageIndex >= 0 && playlist[currentIndex] && playlist[currentIndex].pages) {
-      playPage(currentIndex, _currentPageIndex);
+  _autoAdvancing = true;
+  try {
+    if (playMode === 'single-loop') {
+      if (_currentPageIndex >= 0 && playlist[currentIndex] && playlist[currentIndex].pages) {
+        playPage(currentIndex, _currentPageIndex);
+      } else {
+        playByIndex(currentIndex);
+      }
     } else {
-      playByIndex(currentIndex);
+      next();
     }
-  } else {
-    next();
+  } finally {
+    _autoAdvancing = false;
   }
 }
 
@@ -1772,7 +1854,7 @@ function importPlaylistFile() {
 /** 刷新随机歌名显示 */
 async function refreshImportedSongs() {
   try {
-    const result = await window.bili.getRandomSongs(7);
+    const result = await window.bili.getRandomSongs(10);
     const container = document.getElementById('importedSongList');
     if (!container) return;
     const list = (result && result.ok && result.songs) || [];
@@ -1924,7 +2006,6 @@ function clearSearch() {
   switchSearchTab('hot');
   document.getElementById('searchInput').focus();
 }
-
 
 // ============ 播放器辅助 ============
 /** 该视频还在哪些(非当前)歌单里 */
@@ -2278,6 +2359,7 @@ document.addEventListener('keydown', e => {
     case 'Escape':
       // 优先关掉浮层, 其次是退出专注视图(不打断播放)
       if (_themePanelOpen) hideThemePanel();
+      else if (_drawerOpen) closeDrawer();
       else if (_playlistFocus) togglePlaylistFocus(false);
       else if (_playerFullscreen) togglePlayerFullscreen();
       else stopPlayback();
@@ -2315,6 +2397,10 @@ document.addEventListener('mousedown', (e) => {
       }, true);
       break;
     case 'quick-search': quickSearch(el.dataset.query); break;
+    case 'chart-search': chartSearch(el.dataset.title, el.dataset.artist); break;
+    case 'chart-tab': switchChart(el.dataset.source, el.dataset.chart); break;
+    case 'chart-page': chartPage(el.dataset.source, parseInt(el.dataset.delta, 10) || 0); break;
+    case 'chart-reload': loadCharts(true); break;
     case 'del-history': removeSearchHistory(el.dataset.query); break;
     case 'clear-history': clearSearchHistory(); break;
     case 'retry-search': doSearch(searchQuery); break;

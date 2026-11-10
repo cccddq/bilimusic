@@ -45,6 +45,10 @@
     grid: '<rect x="3.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.6"/>',
     maximize: '<path d="M8.5 3.5H5.5a2 2 0 00-2 2v3M15.5 3.5h3a2 2 0 012 2v3M8.5 20.5H5.5a2 2 0 01-2-2v-3M15.5 20.5h3a2 2 0 002-2v-3"/>',
     'maximize-off': '<path d="M3.5 8.5h4v-4M20.5 8.5h-4v-4M3.5 15.5h4v4M20.5 15.5h-4v4"/>',
+    // 收起画面: 两角向内收
+    collapse: '<path d="M9.5 9.5L4 4"/><path d="M4 9V4h5"/><path d="M14.5 14.5L20 20"/><path d="M20 15v5h-5"/>',
+    // 展开画面: 两角向外扩
+    expand: '<path d="M9 4v5H4"/><path d="M15 20v-5h5"/><path d="M4 4l5 5"/><path d="M20 20l-5-5"/>',
     volume: '<path d="M11 4.5L6 9H3v6h3l5 4.5z" fill="currentColor" stroke="none"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/>',
     'volume-mute': '<path d="M11 4.5L6 9H3v6h3l5 4.5z" fill="currentColor" stroke="none"/><path d="M16 9.5l5 5M21 9.5l-5 5"/>',
     clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3.2 2"/>',
@@ -54,6 +58,7 @@
     home: '<path d="M3.5 10.5L12 3.5l8.5 7v9a1.5 1.5 0 01-1.5 1.5H5a1.5 1.5 0 01-1.5-1.5z"/><path d="M9.5 21v-6.5h5V21"/>',
     'chevron-down': '<path d="M6.5 9.5l5.5 5.5 5.5-5.5"/>',
     'chevron-up': '<path d="M6.5 14.5L12 9l5.5 5.5"/>',
+    'chevron-left': '<path d="M14.5 6.5L9 12l5.5 5.5"/>',
     'chevron-right': '<path d="M9.5 6.5l5.5 5.5-5.5 5.5"/>',
     alert: '<path d="M12 3.5l9 16H3z"/><path d="M12 9.5v4.5M12 17h.01"/>',
     headphones: '<path d="M3.5 17.5v-5a8.5 8.5 0 0117 0v5"/><path d="M20.5 18.5a2 2 0 01-2 2h-1a2 2 0 01-2-2v-3a2 2 0 012-2h3zM3.5 18.5a2 2 0 002 2h1a2 2 0 002-2v-3a2 2 0 00-2-2h-3z"/>',

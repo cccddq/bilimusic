@@ -167,7 +167,42 @@ expectEq('源与目标相同不迁移',
 expectEq('空 leveldb 目录不算数据',
   pathsMod.hasAppData('T', (p) => p === path.join('T', sessionsLs), () => []), false);
 
+
+/**
+ * TDZ 检查: renderer.js 顶层会调用 init(), 而 init 会用到一批全局状态。
+ * 如果这些 let/const 声明写在 init() 之后, 就会抛
+ * "Cannot access 'xxx' before initialization"（本项目已因此崩过三次）,
+ * 这里在静态检查阶段直接拦下。
+ */
+function checkStateBeforeInit() {
+  const file = path.join(SRC, 'renderer', 'renderer.js');
+  if (!fs.existsSync(file)) return;
+  const src = fs.readFileSync(file, 'utf8');
+  const initAt = src.search(/^init\(\);$/m);
+  if (initAt < 0) return;
+  const before = src.slice(0, initAt);
+  const after = src.slice(initAt);
+  const WATCHED = [
+    '_drawerOpen', '_drawerTab', '_chartPicks', '_chartPages', '_chartData',
+    '_chartCatalog', '_chartLoading', '_playerCollapsed', '_autoAdvancing',
+    '_playlistFocus', '_playerFullscreen', '_playlistViewMode', '_expandedItems',
+    '_currentPageIndex', '_pageStartTime', '_playerSuppressBounds',
+  ];
+  const bad = [];
+  for (const name of WATCHED) {
+    const declRe = new RegExp('^(?:let|const)\\s+' + name + '\\b', 'm');
+    if (declRe.test(after) && !declRe.test(before)) bad.push(name);
+  }
+  if (bad.length) {
+    problems.push('renderer.js 的状态声明在 init() 之后, 会触发 TDZ: ' + bad.join(', '));
+  } else {
+    notes.push('能力检查: 状态声明都早于 init()（无 TDZ 风险）');
+  }
+}
+
 // ---- 输出 ----
+checkStateBeforeInit();
+
 if (notes.length) {
   console.log('提示:');
   for (const n of notes) console.log('  · ' + n);

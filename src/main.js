@@ -9,6 +9,7 @@ const biliApi = require('./bili-api');
 const wbi = require('./wbi');
 const login = require('./login');
 const qr = require('./qr');
+const charts = require('./charts');
 
 // 开发时 = 仓库根; 打包后 = resources 目录(asar 的同级)
 const REPO_ROOT = path.join(__dirname, '..');
@@ -59,6 +60,8 @@ console.log(`  📁 数据目录: ${USER_DATA_DIR}`);
 let mainWindow = null;
 let playerView = null;
 let playerVisible = false;
+let _lastPlayerRect = null;
+let _viewCollapsed = false;   // 画面是否被"收起"(音频仍在播)   // 最近一次由界面算出的播放器区域(未播放时只记录, 不应用)
 let hasTray = false;
 let _currentBvid = null;
 let _currentUrl = '';
@@ -176,12 +179,19 @@ function setupSessionHardening() {
 // ============ 播放器 ============
 function applyPlayerBounds(rect) {
   if (!playerView || !mainWindow) return;
-  playerView.setBounds({
+  _lastPlayerRect = {
     x: Math.max(0, Math.round(rect.x)),
     y: Math.max(0, Math.round(rect.y)),
     width: Math.max(0, Math.round(rect.width)),
     height: Math.max(0, Math.round(rect.height)),
-  });
+  };
+  // 没在播放时绝不要把视图铺到中间列: 原生视图盖在网页之上,
+  // 会挡住首页的"继续播放/搜索"等按钮, 表现为"刚进来什么都点不了"。
+  if (!playerVisible) {
+    playerView.setBounds({ x: 0, y: 0, width: 0, height: 0 });
+    return;
+  }
+  playerView.setBounds(_lastPlayerRect);
 }
 
 /** 组装视频地址; 不再产生无意义的 ?t=0 / ?p=1 */
@@ -198,7 +208,11 @@ function buildVideoUrl(bvid, t, p) {
 function loadPlayerUrl(url) {
   if (!playerView) return;
   _currentUrl = url;
-  playerVisible = true;
+  // 收起状态必须保持 false: 否则紧接着的 relayout 会把坐标当成"可显示"应用回去,
+  // 表现为自动切下一首时画面自己弹回来
+  playerVisible = !_viewCollapsed;
+  // 收起状态(用户点了"收起画面")时, 即使自动切下一首也保持 0×0, 不把画面顶出来
+  if (!_viewCollapsed && _lastPlayerRect) playerView.setBounds(_lastPlayerRect);
   playerView.webContents.loadURL(url).catch(() => {});
 }
 
@@ -287,6 +301,7 @@ ipcMain.handle('app:info', async () => ({
   userData: USER_DATA_DIR,
   electron: process.versions.electron,
   playerVisible,
+  playerBounds: playerView ? playerView.getBounds() : null,
   hasTray,
 }));
 
@@ -317,11 +332,28 @@ ipcMain.on('player:pageFullscreen', () => {
 
 ipcMain.on('player:hide', () => {
   if (!playerView) return;
+  _viewCollapsed = false;
   playerVisible = false;
   _currentBvid = null;
   _currentUrl = '';
   pausePlayer();            // 关键: 把视图缩成 0×0 不会停止 HTML5 音频
   playerView.setBounds({ x: 0, y: 0, width: 0, height: 0 });
+});
+
+// 收起画面: 只缩视图, 不暂停 —— 这正是与 player:hide 的区别
+ipcMain.on('player:collapse', () => {
+  if (!playerView) return;
+  _viewCollapsed = true;
+  playerVisible = false;
+  playerView.setBounds({ x: 0, y: 0, width: 0, height: 0 });
+});
+
+// 展开画面: 把视图摆回界面算好的位置
+ipcMain.on('player:expand', () => {
+  if (!playerView) return;
+  _viewCollapsed = false;
+  playerVisible = true;
+  if (_lastPlayerRect) playerView.setBounds(_lastPlayerRect);
 });
 
 ipcMain.handle('player:pause', async () => {
@@ -337,6 +369,33 @@ ipcMain.handle('player:resume', async () => {
 });
 
 // ============ B 站收藏夹同步(默认歌单 → bilimusic) ============
+// ============ 各音乐站榜单(只取歌名, 不需要音源) ============
+const chartCache = new Map();          // "source:chart" -> { at, data }
+const CHART_TTL = 30 * 60 * 1000;      // 30 分钟
+ipcMain.handle('music:charts', async (_e, payload) => {
+  const picks = (payload && payload.picks) || {};
+  const force = !!(payload && payload.force);
+  const out = {};
+  for (const source of Object.keys(picks)) {
+    const key = picks[source];
+    const ck = source + ":" + key;
+    const hit = chartCache.get(ck);
+    if (!force && hit && Date.now() - hit.at < CHART_TTL) { out[source] = hit.data; continue; }
+    try {
+      const data = await charts.fetchChart(source, key);
+      const wrapped = Object.assign({ ok: true }, data);
+      chartCache.set(ck, { at: Date.now(), data: wrapped });
+      out[source] = wrapped;
+    } catch (e) {
+      // 抓取失败: 有旧缓存先用旧的(标记 stale), 否则给错误态
+      out[source] = hit
+        ? Object.assign({}, hit.data, { stale: true, error: e.message })
+        : { ok: false, source: source, error: e.message, songs: [] };
+    }
+    await new Promise((r) => setTimeout(r, 800));   // 串行 + 间隔, 避免被限流
+  }
+  return { ok: true, catalog: charts.catalog(), data: out };
+});
 ipcMain.handle('fav:plan', async (_e, bvids) => {
   try { return { ok: true, data: await biliApi.favPlan(bvids) }; }
   catch (e) { return { ok: false, message: e.message }; }
@@ -395,7 +454,7 @@ ipcMain.handle('import:saveSongs', async (_e, { songs }) => {
 
 ipcMain.handle('import:getRandomSongs', async (_e, { count }) => {
   const songs = loadSongs();
-  const n = Math.min(count || 7, songs.length);
+  const n = Math.min(count || 10, songs.length);
   const shuffled = [...songs].sort(() => Math.random() - 0.5);
   return { ok: true, songs: shuffled.slice(0, n), total: songs.length };
 });

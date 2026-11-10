@@ -37,10 +37,15 @@ contextBridge.exposeInMainWorld('bili', {
   playerStatus: () => ipcRenderer.invoke('player:status'),
   playerSeek: (bvid, t, p = 0) => ipcRenderer.invoke('player:seek', { bvid, t, p }),
   playerHide: () => ipcRenderer.send('player:hide'),
+  // 收起 / 展开画面(收起时音频继续, 与 playerHide 不同)
+  playerCollapse: () => ipcRenderer.send('player:collapse'),
+  playerExpand: () => ipcRenderer.send('player:expand'),
   playerSetBounds: (rect) => ipcRenderer.send('player:setBounds', rect),
   playerSetVolume: (volume) => ipcRenderer.invoke('player:setVolume', { volume }),
   playerGetVolume: () => ipcRenderer.invoke('player:getVolume'),
   // B 站收藏夹同步(默认歌单 → bilimusic)
+  // 各音乐站榜单(网易云 / QQ / 酷狗, 只取歌名)
+  musicCharts: (picks, force) => ipcRenderer.invoke('music:charts', { picks, force }),
   favPlan: (bvids) => ipcRenderer.invoke('fav:plan', bvids),
   favSync: (mode) => ipcRenderer.invoke('fav:sync', mode),
   playerPageFullscreen: () => ipcRenderer.send('player:pageFullscreen'),
